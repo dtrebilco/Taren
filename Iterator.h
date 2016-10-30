@@ -153,8 +153,7 @@ namespace iter
     decltype(std::end(m_data))   m_end;        //!< The end marker
 
   };
-
-  
+    
   /// \brief A iterator modifier that allows elements to be erased from the underlying type during iteration.
   ///        Order of elements in the container type is preserved during deletion. Deletion of elements will occur in order
   ///        and by the exit of the iteration, but may be delayed. 
@@ -281,8 +280,7 @@ namespace iter
     decltype(std::end(m_data))   m_end;        //!< The end marker
 
   };
-
-
+  
   /// \brief A iterator modifier that allows elements to be erased from the underlying type during iteration.
   ///        Order of elements in the container type is NOT preserved during deletion. Deletion of elements will occur in order
   ///        and by the exit of the iteration, but may be delayed. 
