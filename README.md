@@ -1,0 +1,2 @@
+# CppTemplates
+Useful C++ templates 
