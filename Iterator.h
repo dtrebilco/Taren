@@ -1,3 +1,4 @@
+#include <iterator>
 
 /// \brief Helper methods/structures when using for-range iteration 
 namespace iter
@@ -8,8 +9,8 @@ namespace iter
     const T& m_v;
 
     reverse_wrapper(const T& a_v) : m_v(a_v) {}
-    inline auto begin() -> decltype(std::rbegin(m_v)) { return std::rbegin(m_v); }
-    inline auto end() -> decltype(std::rend(m_v)) { return std::rend(m_v); }
+    inline auto begin() -> decltype(m_v.rbegin()) { return m_v.rbegin(); }
+    inline auto end() -> decltype(m_v.rend()) { return m_v.rend(); }
   };
 
   /// \brief A iterator modifier that will iterate the passed type in reverse
@@ -70,21 +71,23 @@ namespace iter
   {
     struct Value
     {
+    protected:
       eraser_wrapper<T>& m_parent; //!< The parent which holds the iteration data
 
       Value(eraser_wrapper<T>& a_parent) : m_parent(a_parent) {}
-      
+
+    public:  
       /// \brief Get the value from the container element
       inline typename T::value_type& value() { return *m_parent.m_current; }
-      inline typename const T::value_type& value() const { return *m_parent.m_current; }
+      inline const typename T::value_type& value() const { return *m_parent.m_current; }
 
       /// \brief Get the value from the container element
       inline typename T::value_type& operator *() { return *m_parent.m_current; }
-      inline typename const T::value_type& operator *() const { return *m_parent.m_current; }
+      inline const typename T::value_type& operator *() const { return *m_parent.m_current; }
 
       /// \brief Get the value from the container element
       inline typename T::value_type* operator ->() { return &*m_parent.m_current; }
-      inline typename const T::value_type* operator ->() const { return &*m_parent.m_current; }
+      inline const typename T::value_type* operator ->() const { return &*m_parent.m_current; }
 
       /// \brief Mark the current item to be erased from the parent container at a later stage. 
       ///        Can be called multiple times and value will still be valid until the next iteration.
@@ -94,31 +97,32 @@ namespace iter
       inline size_t index() const { return std::distance(std::begin(m_parent.m_data), m_parent.m_current); }
     };
 
-    struct Iterator : Value
+    struct Iterator : public Value
     {
       Iterator(eraser_wrapper<T>& a_parent) : Value(a_parent) {}
 
       inline Iterator& operator++()
       {
-        if (m_parent.m_markRemove)
+        eraser_wrapper<T>& parent = Value::m_parent;
+        if (parent.m_markRemove)
         {
-          m_parent.m_markRemove = false;
+          parent.m_markRemove = false;
         }
         else
         {
           // Move the existing value to the new position
-          if (m_parent.m_eraseStart != m_parent.m_current)
+          if (parent.m_eraseStart != parent.m_current)
           {
-            *m_parent.m_eraseStart = std::move(*m_parent.m_current);
+            *parent.m_eraseStart = std::move(*parent.m_current);
           }
-          ++m_parent.m_eraseStart;
+          ++parent.m_eraseStart;
         }
 
-        ++m_parent.m_current;
+        ++parent.m_current;
         return *this;
       }
 
-      inline bool operator != (const Iterator&) const { return m_parent.m_current != m_parent.m_end; }
+      inline bool operator != (const Iterator&) const { return Value::m_parent.m_current != Value::m_parent.m_end; }
       inline Value& operator *() { return *this; }
     };
 
@@ -191,21 +195,23 @@ namespace iter
   {
     struct Value
     {
+    protected:
       unordered_eraser_wrapper<T>& m_parent; //!< The parent which holds the iteration data
 
       Value(unordered_eraser_wrapper<T>& a_parent) : m_parent(a_parent) {}
 
+    public:
       /// \brief Get the value from the container element
       inline typename T::value_type& value() { return *m_parent.m_current; }
-      inline typename const T::value_type& value() const { return *m_parent.m_current; }
+      inline const typename T::value_type& value() const { return *m_parent.m_current; }
 
       /// \brief Get the value from the container element
       inline typename T::value_type& operator *() { return *m_parent.m_current; }
-      inline typename const T::value_type& operator *() const { return *m_parent.m_current; }
+      inline const typename T::value_type& operator *() const { return *m_parent.m_current; }
 
       /// \brief Get the value from the container element
       inline typename T::value_type* operator ->() { return &*m_parent.m_current; }
-      inline typename const T::value_type* operator ->() const { return &*m_parent.m_current; }
+      inline const typename T::value_type* operator ->() const { return &*m_parent.m_current; }
 
       /// \brief Mark the current item to be erased from the parent container at a later stage. 
       ///        Can be called multiple times and value will still be valid until the next iteration.
@@ -216,31 +222,32 @@ namespace iter
                                                 std::distance(m_parent.m_eraseStart, m_parent.m_end); }
     };
 
-    struct Iterator : Value
+    struct Iterator : public Value
     {
       Iterator(unordered_eraser_wrapper<T>& a_parent) : Value(a_parent) {}
 
       inline Iterator& operator++()
       {
+        unordered_eraser_wrapper<T>& parent = Value::m_parent;
         // If removing - swap with last
-        if (m_parent.m_markRemove)
+        if (parent.m_markRemove)
         {
-          m_parent.m_markRemove = false;
-          --m_parent.m_eraseStart;
-          if (m_parent.m_current != m_parent.m_eraseStart)
+          parent.m_markRemove = false;
+          --parent.m_eraseStart;
+          if (parent.m_current != parent.m_eraseStart)
           {
-            *m_parent.m_current = std::move(*m_parent.m_eraseStart);
+            *parent.m_current = std::move(*parent.m_eraseStart);
           }
         }
         else
         {
-          ++m_parent.m_current;
+          ++parent.m_current;
         }
 
         return *this;
       }
 
-      inline bool operator != (const Iterator&) const { return m_parent.m_current != m_parent.m_eraseStart; }
+      inline bool operator != (const Iterator&) const { return Value::m_parent.m_current != Value::m_parent.m_eraseStart; }
       inline Value& operator *() { return *this; }
     };
 
