@@ -69,6 +69,10 @@ namespace iter
   template <typename T>
   struct eraser_wrapper
   {
+    using IterType = decltype(std::declval<T>().begin());
+    using ValueRef = decltype(std::declval<IterType>().operator*());
+    using ValueType = typename std::remove_reference<ValueRef>::type;
+
     struct Value
     {
     protected:
@@ -78,23 +82,23 @@ namespace iter
 
     public:  
       /// \brief Get the value from the container element
-      inline typename T::value_type& value() { return *m_parent.m_current; }
-      inline const typename T::value_type& value() const { return *m_parent.m_current; }
+      inline ValueType& value() { return *m_parent.m_current; }
+      inline const ValueType& value() const { return *m_parent.m_current; }
 
       /// \brief Get the value from the container element
-      inline typename T::value_type& operator *() { return *m_parent.m_current; }
-      inline const typename T::value_type& operator *() const { return *m_parent.m_current; }
+      inline ValueType& operator *() { return *m_parent.m_current; }
+      inline const ValueType& operator *() const { return *m_parent.m_current; }
 
       /// \brief Get the value from the container element
-      inline typename T::value_type* operator ->() { return &*m_parent.m_current; }
-      inline const typename T::value_type* operator ->() const { return &*m_parent.m_current; }
+      inline ValueType* operator ->() { return &*m_parent.m_current; }
+      inline const ValueType* operator ->() const { return &*m_parent.m_current; }
 
       /// \brief Mark the current item to be erased from the parent container at a later stage. 
       ///        Can be called multiple times and value will still be valid until the next iteration.
       inline void mark_for_erase() const { m_parent.m_markRemove = true; }
 
       /// \brief Get the index of the this value in the parent container. Item may be shifted later if previous elements are erased.
-      inline size_t index() const { return std::distance(std::begin(m_parent.m_data), m_parent.m_current); }
+      inline size_t index() const { return std::distance(m_parent.m_data.begin(), m_parent.m_current); }
     };
 
     struct Iterator : public Value
@@ -103,7 +107,7 @@ namespace iter
 
       inline Iterator& operator++()
       {
-        eraser_wrapper<T>& parent = Value::m_parent;
+        auto& parent = Value::m_parent;
         if (parent.m_markRemove)
         {
           parent.m_markRemove = false;
@@ -111,7 +115,8 @@ namespace iter
         else
         {
           // Move the existing value to the new position
-          if (parent.m_eraseStart != parent.m_current)
+          if (std::is_pod<ValueType>::value || 
+              parent.m_eraseStart != parent.m_current)
           {
             *parent.m_eraseStart = std::move(*parent.m_current);
           }
@@ -128,8 +133,8 @@ namespace iter
 
     inline eraser_wrapper(T& a_data) : m_data(a_data)
     { 
-      m_current = std::begin(m_data);
-      m_end = std::end(m_data);
+      m_current = m_data.begin();
+      m_end = m_data.end();
       m_eraseStart = m_current;
     }
 
@@ -152,9 +157,9 @@ namespace iter
     T& m_data;  //!< The data structure being processed
     bool m_markRemove = false;    //!< If the item pointed to by m_current is to be removed
 
-    decltype(std::begin(m_data)) m_current;    //!< The current iterator position
-    decltype(std::begin(m_data)) m_eraseStart; //!< The erase start position
-    decltype(std::end(m_data))   m_end;        //!< The end marker
+    IterType m_current;    //!< The current iterator position
+    IterType m_eraseStart; //!< The erase start position
+    IterType m_end;        //!< The end marker
 
   };
     
@@ -193,6 +198,10 @@ namespace iter
   template <typename T>
   struct unordered_eraser_wrapper
   {
+    using IterType = decltype(std::declval<T>().begin());
+    using ValueRef = decltype(std::declval<IterType>().operator*());
+    using ValueType = typename std::remove_reference<ValueRef>::type;
+
     struct Value
     {
     protected:
@@ -202,23 +211,23 @@ namespace iter
 
     public:
       /// \brief Get the value from the container element
-      inline typename T::value_type& value() { return *m_parent.m_current; }
-      inline const typename T::value_type& value() const { return *m_parent.m_current; }
+      inline ValueType& value() { return *m_parent.m_current; }
+      inline const ValueType& value() const { return *m_parent.m_current; }
 
       /// \brief Get the value from the container element
-      inline typename T::value_type& operator *() { return *m_parent.m_current; }
-      inline const typename T::value_type& operator *() const { return *m_parent.m_current; }
+      inline ValueType& operator *() { return *m_parent.m_current; }
+      inline const ValueType& operator *() const { return *m_parent.m_current; }
 
       /// \brief Get the value from the container element
-      inline typename T::value_type* operator ->() { return &*m_parent.m_current; }
-      inline const typename T::value_type* operator ->() const { return &*m_parent.m_current; }
+      inline ValueType* operator ->() { return &*m_parent.m_current; }
+      inline const ValueType* operator ->() const { return &*m_parent.m_current; }
 
       /// \brief Mark the current item to be erased from the parent container at a later stage. 
       ///        Can be called multiple times and value will still be valid until the next iteration.
       inline void mark_for_erase() const { m_parent.m_markRemove = true; }
       
       /// \brief Get the index of the loop counter - useful for debugging
-      inline size_t loop_index() const { return std::distance(std::begin(m_parent.m_data), m_parent.m_current) + 
+      inline size_t loop_index() const { return std::distance(m_parent.m_data.begin(), m_parent.m_current) +
                                                 std::distance(m_parent.m_eraseStart, m_parent.m_end); }
     };
 
@@ -228,13 +237,14 @@ namespace iter
 
       inline Iterator& operator++()
       {
-        unordered_eraser_wrapper<T>& parent = Value::m_parent;
+        auto& parent = Value::m_parent;
         // If removing - swap with last
         if (parent.m_markRemove)
         {
           parent.m_markRemove = false;
           --parent.m_eraseStart;
-          if (parent.m_current != parent.m_eraseStart)
+          if (std::is_pod<ValueType>::value || 
+              parent.m_current != parent.m_eraseStart)
           {
             *parent.m_current = std::move(*parent.m_eraseStart);
           }
@@ -254,8 +264,8 @@ namespace iter
 
     inline unordered_eraser_wrapper(T& a_data) : m_data(a_data)
     {
-      m_current = std::begin(m_data);
-      m_end = std::end(m_data);
+      m_current = m_data.begin();
+      m_end = m_data.end();
       m_eraseStart = m_end;
     }
 
@@ -265,7 +275,8 @@ namespace iter
       if (m_markRemove)
       {
         --m_eraseStart;
-        if (m_current != m_eraseStart)
+        if (std::is_pod<ValueType>::value ||
+            m_current != m_eraseStart)
         {
           *m_current = std::move(*m_eraseStart);
         }
@@ -282,9 +293,9 @@ namespace iter
     T& m_data;  //!< The data structure being processed
     bool m_markRemove = false;    //!< If the item pointed to by m_current is to be removed
 
-    decltype(std::begin(m_data)) m_current;    //!< The current iterator position
-    decltype(std::begin(m_data)) m_eraseStart; //!< The erase start position
-    decltype(std::end(m_data))   m_end;        //!< The end marker
+    IterType m_current;    //!< The current iterator position
+    IterType m_eraseStart; //!< The erase start position
+    IterType m_end;        //!< The end marker
 
   };
   
