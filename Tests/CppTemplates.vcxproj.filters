@@ -16,6 +16,9 @@
     <ClCompile Include="Iterator_UnitTests.cpp">
       <Filter>Tests</Filter>
     </ClCompile>
+    <ClCompile Include="Iterator_Profile.cpp">
+      <Filter>Tests</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Iterator.h">
