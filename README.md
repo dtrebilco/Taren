@@ -38,21 +38,21 @@ But when you want to delete elements in the array while iterating, you either ha
 ```
   
 However, these have performance issues if deleting more than one element as the container elements may be shuffled multiple times.
-A slightly more modern approach is to use ```std::remove()``` with a lambda
+A slightly more modern approach is to use ```std::remove_if()``` with a lambda
 ```c++    
-  array.erase(std::remove(array.begin(), array.end(), 
+  array.erase(std::remove_if(array.begin(), array.end(), 
        [] (auto& item)
        {
          bool deleting = condition;
          return deleting;
        }
-       ) array.end());
+       ), array.end());
 ```
   
 But this is a bit ugly to type, and may be error prone in ensuring the correct container is always used.
 
 Presented is a safe and performant way of removing elements while iterating on them.
-Inspired by [Jonathan Blow's language feature on iterator removal](https://youtu.be/-UPFH0eWHEI?list=PLmV5I2fxaiCKfxMBrNsU1kgKJXD3PkyxO&t=2017)
+Inspired by [Jonathan Blow's language feature on iterator removal](https://youtu.be/-UPFH0eWHEI?list=PLmV5I2fxaiCKfxMBrNsU1kgKJXD3PkyxO&t=2017) :
 ```c++   
   for(auto& item : iter::eraser(array))
   {
@@ -72,4 +72,27 @@ If preserving order is not important:
     }
   }
 ```
+
+## Iterator: reverse()
+This helper simply reverses the iteration of the container
+```c++
+  for(auto& item : iter::reverse(array))
+```
+
+
+## Iterator: counter() and counter_reverse()
+This helper provides a counter iterator in the cases where you still need a index.
+```c++
+  // Produces -> 0,1,2,3,4,5...
+  for(auto& index : iter::counter(array.size()))
+```
+
+```c++
+  // Produces -> ...5,4,3,2,1,0 
+  for(auto& index : iter::counter_reverse(array.size()))
+```
+
+If used throughout a code base, it can be easily modified to account for different platforms preferences in loop counetr types.
+
+
 
