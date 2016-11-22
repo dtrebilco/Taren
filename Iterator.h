@@ -1,4 +1,11 @@
+//=============================================================================
+//  Copyright (C) 2016  Damian Trebilco
+//  Licensed under the MIT license - See LICENSE.txt for details.
+//=============================================================================
+
 #include <iterator>
+#include <type_traits>
+#include <utility>
 
 // Defines to determine if to use extended C++17 range based for loops
 #if defined(_MSC_VER) && (_MSC_VER >= 1910)
