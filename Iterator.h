@@ -340,7 +340,7 @@ public:
 ///                   does not re-allocate on erase().
 ///        Eg. Do not do this: 
 ///            Type* foundItem = nullptr; 
-///            for(auto& value : iter::eraser(vector))
+///            for(auto& value : iter::unordered_eraser(vector))
 ///            { 
 ///              value.mark_for_delete();
 ///              foundItem = &*value;
