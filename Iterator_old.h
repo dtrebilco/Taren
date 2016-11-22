@@ -1,71 +1,15 @@
+//=============================================================================
+//  Copyright (C) 2016  Damian Trebilco
+//  Licensed under the MIT license - See LICENSE.txt for details.
+//=============================================================================
+
+// This is the original version written, but was discarded based on profiling it's performance.
+
 #include <iterator>
 
 /// \brief Helper methods/structures when using for-range iteration 
 namespace iter
 {
-  template <typename T>
-  struct reverse_wrapper
-  {
-    const T& m_v;
-
-    reverse_wrapper(const T& a_v) : m_v(a_v) {}
-    inline auto begin() -> decltype(m_v.rbegin()) { return m_v.rbegin(); }
-    inline auto end() -> decltype(m_v.rend()) { return m_v.rend(); }
-  };
-
-  /// \brief A iterator modifier that will iterate the passed type in reverse
-  ///        Usage: for(auto& value : iter::reverse(array))
-  template <typename T>
-  reverse_wrapper<T> reverse(const T& v)
-  {
-    return reverse_wrapper<T>(v);
-  }
-
-  /// \brief A iterator that will output the numbers 0 .. (total - 1)
-  ///        Usage: for(auto value : iter::counter(6))  produces -> 0,1,2,3,4,5
-  ///
-  ///        Also useful for container access when range for cannot be used
-  ///        Usage: for(auto value : iter::counter(array.size()))
-  struct counter
-  {
-    struct Iterator
-    {
-      size_t m_pos;
-
-      inline Iterator& operator++() { m_pos++; return *this; }
-      inline bool operator!=(const Iterator& a_rhs) const { return m_pos != a_rhs.m_pos; }
-      inline size_t operator *() const { return m_pos; }
-    };
-
-    inline counter(size_t a_size) : m_size(a_size) {}
-
-    inline Iterator begin() { return Iterator{ 0 }; }
-    inline Iterator end() { return Iterator{ m_size }; }
-
-    size_t m_size = 0;
-  };
-  
-  /// \brief A iterator that will output the numbers (total - 1) .. 0
-  ///        Usage: for(auto value : iter::counter_reverse(6))  produces -> 5,4,3,2,1,0
-  struct counter_reverse
-  {
-    struct Iterator
-    {
-      size_t m_pos;
-
-      inline Iterator& operator++() { m_pos--; return *this; }
-      inline bool operator!=(const Iterator& a_rhs) const { return m_pos != a_rhs.m_pos; }
-      inline size_t operator *() const { return m_pos; }
-    };
-
-    inline counter_reverse(size_t a_size) : m_size(a_size) {}
-
-    inline Iterator begin() { return Iterator{ m_size - 1 }; }
-    inline Iterator end() { return Iterator{ size_t(0) - 1 }; }
-
-    size_t m_size = 0;
-  };
-
   template <typename T>
   struct eraser_wrapper
   {
