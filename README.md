@@ -92,7 +92,7 @@ This helper provides a counter iterator in the cases where you still need a inde
   for(auto& index : iter::counter_reverse(array.size()))
 ```
 
-If used throughout a code base, it can be easily modified to account for different platforms preferences in loop counetr types.
+If used throughout a code base, it can be easily modified to account for different platforms preferences in loop counter types.
 
 
 
