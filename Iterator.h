@@ -88,7 +88,7 @@ struct eraser_wrapper
 {
 private:
   using IterType = decltype(std::declval<T>().begin());
-  using ValueRef = decltype(std::declval<IterType>().operator*());
+  using ValueRef = decltype(*std::declval<IterType>());
   using ValueType = typename std::remove_reference<ValueRef>::type;
 
   struct Value
@@ -218,7 +218,7 @@ struct unordered_eraser_wrapper
 {
 private:
   using IterType = decltype(std::declval<T>().begin());
-  using ValueRef = decltype(std::declval<IterType>().operator*());
+  using ValueRef = decltype(*std::declval<IterType>());
   using ValueType = typename std::remove_reference<ValueRef>::type;
 
   struct Value
