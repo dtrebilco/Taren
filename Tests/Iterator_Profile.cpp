@@ -121,10 +121,14 @@ void GenericRemove(const T & a_data, const V a_value)
 template <typename T, typename V>
 void GenericRemoveIf(const T & a_data, const V a_value)
 {
+  using IterType = decltype(std::declval<T>().begin());
+  using ValueRef = decltype(*std::declval<IterType>());
+  using ValueType = typename std::remove_reference<ValueRef>::type;
+
   TIMER_START
     for (auto& d : process)
     {
-      d.erase(std::remove_if(d.begin(), d.end(), [a_value](auto& a) { return (a == a_value); }), d.end());
+      d.erase(std::remove_if(d.begin(), d.end(), [a_value](ValueType& a) { return (a == a_value); }), d.end());
     }
   TIMER_END
 }

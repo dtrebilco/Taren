@@ -365,10 +365,10 @@ private:
   {
   protected:
 
-    IterType m_iter;    //!< The iterator position
     T& m_data;          //!< The data structure being processed
+    IterType m_iter;    //!< The iterator position
 
-    inline Value(T& a_data, IterType& a_iter) : m_data(a_data), m_iter(a_iter) {}
+    inline Value(T& a_data, IterType a_iter) : m_data(a_data), m_iter(a_iter) {}
 
   public:
 
@@ -386,7 +386,7 @@ private:
 
   struct Iterator : public Value
   {
-    inline Iterator(T& a_data, IterType& a_iter) : Value(a_data, a_iter) {}
+    inline Iterator(T& a_data, IterType a_iter) : Value(a_data, a_iter) {}
 
     inline Iterator& operator++()
     {
