@@ -1012,6 +1012,208 @@ bool TypeStringTests()
   return true;
 }
 
+template <typename T>
+bool IndexerStringTests()
+{
+  // Indexer tests
+  {
+    size_t foundIndex = 0;
+    T indexer = { "1","2","3","4" };
+    for (auto& val : iter::indexer(indexer))
+    {
+      if (*val == "1")
+      {
+        foundIndex = val.index();
+      }
+    }
+    if (!IsSame(indexer, T{ "1", "2", "3", "4" }) ||
+        foundIndex != 0)
+    {
+      std::cout << "Indexer test failed\n";
+      return false;
+    }
+  }
+  
+  {
+    size_t foundIndex = 0;
+    const T indexer = { "1","2","3","4" };
+    for (auto& val : iter::indexer(indexer))
+    {
+      if (*val == "1")
+      {
+        foundIndex = val.index();
+      }
+    }
+    if (!IsSame(indexer, T{ "1", "2", "3", "4" }) ||
+      foundIndex != 0)
+    {
+      std::cout << "Indexer test failed\n";
+      return false;
+    }
+  }
+
+  {
+    size_t foundIndex = 0;
+    const T indexer = { "1","2","3","4" };
+    for (auto& val : iter::indexer(indexer))
+    {
+      if (*val == "2")
+      {
+        foundIndex = val.index();
+      }
+    }
+    if (!IsSame(indexer, T{ "1", "2", "3", "4" }) ||
+      foundIndex != 1)
+    {
+      std::cout << "Indexer test failed\n";
+      return false;
+    }
+  }
+
+  {
+    size_t foundIndex = 0;
+    const T indexer = { "1","2","3","4" };
+    for (auto& val : iter::indexer(indexer))
+    {
+      if (*val == "3")
+      {
+        foundIndex = val.index();
+      }
+    }
+    if (!IsSame(indexer, T{ "1", "2", "3", "4" }) ||
+      foundIndex != 2)
+    {
+      std::cout << "Indexer test failed\n";
+      return false;
+    }
+  }
+
+  {
+    size_t foundIndex = 0;
+    const T indexer = { "1","2","3","4" };
+    for (auto& val : iter::indexer(indexer))
+    {
+      if (*val == "4")
+      {
+        foundIndex = val.index();
+      }
+    }
+    if (!IsSame(indexer, T{ "1", "2", "3", "4" }) ||
+      foundIndex != 3)
+    {
+      std::cout << "Indexer test failed\n";
+      return false;
+    }
+  }
+  
+  {
+    size_t foundIndex = 10;
+    const T indexer = { };
+    for (auto& val : iter::indexer(indexer))
+    {
+      if (*val == "1")
+      {
+        foundIndex = val.index();
+      }
+    }
+    if (!IsSame(indexer, T{ }) ||
+      foundIndex != 10)
+    {
+      std::cout << "Indexer test failed\n";
+      return false;
+    }
+  }
+
+  {
+    size_t foundIndex = 10;
+    const T indexer = { "1" };
+    for (auto& val : iter::indexer(indexer))
+    {
+      if (*val == "1")
+      {
+        foundIndex = val.index();
+      }
+    }
+    if (!IsSame(indexer, T{"1"}) ||
+      foundIndex != 0)
+    {
+      std::cout << "Indexer test failed\n";
+      return false;
+    }
+  }
+
+  {
+    size_t foundIndex = 10;
+    const T indexer = { "1" };
+    for (const auto& val : iter::indexer(indexer))
+    {
+      if (*val == "1")
+      {
+        foundIndex = val.index();
+      }
+    }
+    if (!IsSame(indexer, T{ "1" }) ||
+      foundIndex != 0)
+    {
+      std::cout << "Indexer test failed\n";
+      return false;
+    }
+  }
+
+  {
+    size_t foundIndex = 10;
+    const T indexer = { "1" };
+    for (const auto val : iter::indexer(indexer))
+    {
+      if (*val == "1")
+      {
+        foundIndex = val.index();
+      }
+    }
+    if (!IsSame(indexer, T{ "1" }) ||
+      foundIndex != 0)
+    {
+      std::cout << "Indexer test failed\n";
+      return false;
+    }
+  }
+
+  {
+    size_t foundIndex = 10;
+    const T indexer = { "1", "2" };
+    for (auto val : iter::indexer(indexer))
+    {
+      if (*val == "2")
+      {
+        foundIndex = val.index();
+      }
+    }
+    if (!IsSame(indexer, T{ "1", "2" }) ||
+      foundIndex != 1)
+    {
+      std::cout << "Indexer test failed\n";
+      return false;
+    }
+  }
+
+  {
+    size_t foundIndex = 10;
+    const T indexer = { "1", "2", "3" };
+    for (auto val : iter::indexer(indexer))
+    {
+      foundIndex = val.index();
+    }
+    if (!IsSame(indexer, T{ "1", "2", "3" }) ||
+      foundIndex != 2)
+    {
+      std::cout << "Indexer test failed\n";
+      return false;
+    }
+  }
+
+  return true;
+}
+
 bool Iterator_UnitTests()
 {
   // Reverse and counter tests
@@ -1033,6 +1235,14 @@ bool Iterator_UnitTests()
   {
     return false;
   }
+
+  // Indexer tests
+  if (!IndexerStringTests<std::vector<std::string>>() ||
+      !IndexerStringTests<std::list<std::string>>())
+  {
+    return false;
+  }
+   
 
   return true;
 }

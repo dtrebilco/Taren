@@ -95,4 +95,14 @@ This helper provides a counter iterator in the cases where you still need a inde
 If used throughout a code base, it can be easily modified to account for different platforms preferences in loop counter types.
 
 
-
+## Iterator: indexer()
+This helper simply provides a way to get the index of the iteration item (eraser() also provides this functionality)
+```c++
+  for(const auto& item : iter::indexer(array))
+  {
+    if(*item == blah)
+    {
+      return item.index();
+    }
+  }
+```

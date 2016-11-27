@@ -11,7 +11,6 @@ int main()
   Iterator_UnitTests();
   Iterator_RunProfile();
 
-  getchar();
   return 0;
 }
 

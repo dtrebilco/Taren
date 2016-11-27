@@ -353,6 +353,79 @@ unordered_eraser_wrapper<T> unordered_eraser(T& v)
   return unordered_eraser_wrapper<T>(v);
 }
 
+template <typename T>
+struct indexer_wrapper
+{
+private:
+  using IterType = decltype(std::declval<T>().begin());
+  using ValueRef = decltype(*std::declval<IterType>());
+  using ValueType = typename std::remove_reference<ValueRef>::type;
+
+  struct Value
+  {
+  protected:
+
+    IterType m_iter;    //!< The iterator position
+    T& m_data;          //!< The data structure being processed
+
+    inline Value(T& a_data, IterType& a_iter) : m_data(a_data), m_iter(a_iter) {}
+
+  public:
+
+    /// \brief Get the value from the container element
+    inline ValueType& operator *() { return *m_iter; }
+    inline const ValueType& operator *() const { return *m_iter; }
+
+    /// \brief Get the value from the container element
+    inline ValueType* operator ->() { return &*m_iter; }
+    inline const ValueType* operator ->() const { return &*m_iter; }
+
+    /// \brief Get the item index
+    inline size_t index() const { return std::distance(m_data.begin(), m_iter); }
+  };
+
+  struct Iterator : public Value
+  {
+    inline Iterator(T& a_data, IterType& a_iter) : Value(a_data, a_iter) {}
+
+    inline Iterator& operator++()
+    {
+      ++this->m_iter;
+      return *this;
+    }
+
+    inline bool operator != (const Iterator& a_other) const { return this->m_iter != a_other.m_iter; }
+    inline Value& operator *() { return *this; }
+  };
+
+  T& m_data;  //!< The data structure being processed
+
+public:
+
+  inline indexer_wrapper(T& a_data) : m_data(a_data) {}
+
+  inline Iterator begin() { return Iterator(m_data, m_data.begin()); }
+  inline Iterator end() { return Iterator(m_data, m_data.end()); }
+
+};
+
+/// \brief A helper to get the index of the currently processed item when using range for loops.
+///
+///        Usage: for(auto& value : iter::indexer(vector))
+///               { 
+///                 if(someCondition == *value)
+///                 {
+///                   value.index(); // Get the index of the item
+///
+///        Note that the value returned is a smart pointer that needs to be de-referenced to access the value 
+///        (either with *value or value-> )
+///        
+template <typename T>
+indexer_wrapper<T> indexer(T& v)
+{
+  return indexer_wrapper<T>(v);
+}
+
 }
 
 
