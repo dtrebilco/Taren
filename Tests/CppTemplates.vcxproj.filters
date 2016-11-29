@@ -8,6 +8,9 @@
     <Filter Include="Tests">
       <UniqueIdentifier>{eda8dea0-969e-43b2-9c20-d194cab5bc4f}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Articles">
+      <UniqueIdentifier>{79a87e11-80e1-4879-aa13-e257271d67c8}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CppTemplates.cpp">
@@ -28,6 +31,9 @@
   <ItemGroup>
     <None Include="..\README.md">
       <Filter>Tests</Filter>
+    </None>
+    <None Include="..\Articles\EraserProfile.md">
+      <Filter>Articles</Filter>
     </None>
   </ItemGroup>
 </Project>
