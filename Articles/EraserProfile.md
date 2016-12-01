@@ -52,6 +52,8 @@ A slightly more modern approach is to use ```std::remove_if()``` with a lambda
   
 But this is a bit ugly to type, and may be error prone in ensuring the correct container is always used.
 
+## eraser() and unordered_eraser()
+
 Presented is a safe and performant way of removing elements while iterating on them.
 Inspired by [Jonathan Blow's language feature on iterator removal](https://youtu.be/-UPFH0eWHEI?list=PLmV5I2fxaiCKfxMBrNsU1kgKJXD3PkyxO&t=2017) :
 ```c++   
@@ -79,19 +81,28 @@ If preserving order is not important:
 
 ## Performance
 
-Below is presented performance graphs of the above different ways of removing elements from an array. 
+Below is presented performance graphs of the different ways of removing elements from an array as presented in the introduction. 
+Source code for the tests can be found in Iterator_Profile.cpp.
 
 All timings were done with VisualStudio 2017 RC on a Intel i7-4790 3.6GHz, 16GB ram @ 1866MHz, Windows 10.
 
 The tests were done using std::vector data structure as linear data structures are most often used in performance code.
 
+Note that the graphs have been cropped, as the performance of the index and iterator method was so bad for multiple removals.
+![alt text](iter_explain.png "Uncropped data")
+
 Note that while eraser() and unordered_eraser() are generic, template specializations for could be written to optimize for other container types.
 
 ### std::vector < int >
 
+![alt text](iter_int100.png "std::vector<int> (100)")
+![alt text](iter_int1000.png "std::vector<int> (1000)")
 
 
 ### std::vector < std ::string >
+
+![alt text](iter_string100.png "std::vector<std::string> (100)")
+![alt text](iter_string1000.png "std::vector<std::string> (1000)")
 
 
 ## Conclusion
