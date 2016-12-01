@@ -89,6 +89,7 @@ All timings were done with VisualStudio 2017 RC on a Intel i7-4790 3.6GHz, 16GB 
 The tests were done using std::vector data structure as linear data structures are most often used in performance code.
 
 Note that the graphs have been cropped, as the performance of the index and iterator method was so bad for multiple removals.
+
 ![alt text](iter_explain.png "Uncropped data")
 
 Note that while eraser() and unordered_eraser() are generic, template specializations for could be written to optimize for other container types.
