@@ -84,7 +84,7 @@ If preserving order is not important:
 Below is presented performance graphs of the different ways of removing elements from an array as presented in the introduction. 
 Source code for the tests can be found in Iterator_Profile.cpp.
 
-All timings were done with VisualStudio 2017 RC on a Intel i7-4790 3.6GHz, 16GB ram @ 1866MHz, Windows 10.
+All timings were done with VisualStudio 2017 RC (x64) on a Intel i7-4790 3.6GHz, 16GB ram @ 1866MHz, Windows 10.
 
 The tests were done using std::vector data structure as linear data structures are most often used in performance code.
 
@@ -105,6 +105,14 @@ Note that while eraser() and unordered_eraser() are generic, template specializa
 ![alt text](iter_string100.png "std::vector<std::string> (100)")
 ![alt text](iter_string1000.png "std::vector<std::string> (1000)")
 
+
+## Compare with fast remove containers
+It may be said that if fast removal is required, to use a container type that supports this. 
+The removal via the iterator method should perform well with such container types.
+
+![alt text](iter_listcmp100.png "Compare std::vector to std::list")
+
+As the above graph shows, using std ::vector with eraser/unordered_eraser is typically much faster that using a std ::list with iterator removal.
 
 ## Conclusion
 
