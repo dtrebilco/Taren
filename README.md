@@ -2,6 +2,12 @@
 Taren is a collection of C++ code that provide simple but useful functionality. 
 Taren code is standalone and only makes use of some STL.
 
+# Taren articles
+Along with the documentation is a series of articles explaining why certain functions exist.
+- [Eraser iterators.](./Articles/EraserProfile.md)
+
+
+# Taren functions
 ## Iterator: eraser() and unordered_eraser()
 Helpers to remove elements from a container while iterating it.
 
