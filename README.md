@@ -1,5 +1,6 @@
-# CppTemplates
-C++ templates that provide simple but useful functionality.
+# Taren
+Taren is a collection of C++ code that provide simple but useful functionality. 
+Taren code is standalone and only makes use of some STL.
 
 ## Iterator: eraser() and unordered_eraser()
 Helpers to remove elements from a container while iterating it.
