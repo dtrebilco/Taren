@@ -2,6 +2,8 @@
 //  Copyright (C) 2016  Damian Trebilco
 //  Licensed under the MIT license - See LICENSE.txt for details.
 //=============================================================================
+#ifndef __TAREN_ITERATOR_H__
+#define __TAREN_ITERATOR_H__
 
 #include <iterator>
 #include <type_traits>
@@ -427,5 +429,7 @@ indexer_wrapper<T> indexer(T& v)
 }
 
 }
+
+#endif // !__TAREN_ITERATOR_H__
 
 
