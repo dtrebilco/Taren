@@ -40,7 +40,7 @@ Helper to remove elements and append to a container while iterating it.
 ```c++   
   for(auto& item : iter::eraser_safe_append(vector))
   {
-    auto& data = *value;         // Can safely store reference to item under iteration
+    auto& data = *item;          // Can safely store reference to item under iteration
     vector.push_back(newValue);  // Can append new data to vector (even if vector resizes)
 
     if(data == value)
