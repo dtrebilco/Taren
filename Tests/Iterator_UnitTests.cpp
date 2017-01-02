@@ -1,6 +1,7 @@
 
 
 #include "../Iterator.h"
+#include "../IteratorExt.h"
 #include <iostream>
 
 #include <vector>
@@ -507,6 +508,26 @@ bool TypeIntTests()
     }
   }
 
+  {
+    T eraserTest = { 1,2,3,4 };
+    for (auto& val : iter::eraser(eraserTest))
+    {
+      if (*val == 4)
+      {
+        break;
+      }
+      else
+      {
+        val.mark_for_erase();
+      }
+    }
+    if (!IsSame(eraserTest, T{ 4 }))
+    {
+      std::cout << "Eraser test failed\n";
+      return false;
+    }
+  }
+
   // Eraser unordered tests
   {
     T eraserTest = { 1,2,3,4 };
@@ -879,6 +900,26 @@ bool TypeStringTests()
     }
   }
 
+  {
+    T eraserTest = { "1","2","3","4" };
+    for (auto& val : iter::eraser(eraserTest))
+    {
+      if (*val == "4")
+      {
+        break;
+      }
+      else
+      {
+        val.mark_for_erase();
+      }
+    }
+    if (!IsSame(eraserTest, T{ "4" }))
+    {
+      std::cout << "Eraser test failed\n";
+      return false;
+    }
+  }
+
   // Eraser unordered tests
   {
     T eraserTest = { "1","2","3","4" };
@@ -1214,6 +1255,943 @@ bool IndexerStringTests()
   return true;
 }
 
+template <typename T>
+bool TypeAppendIntTests()
+{
+  // Eraser tests
+  {
+    T eraserTest = { 1,2,3,4 };
+    for (auto& val : iter::eraser_safe_append(eraserTest))
+    {
+      *val;
+    }
+    if (!IsSame(eraserTest, T{ 1, 2, 3, 4 }))
+    {
+      std::cout << "Eraser test failed\n";
+      return false;
+    }
+  }
+
+  {
+    size_t foundIndex = 0;
+    T eraserTest = { 1,2,3,4 };
+    for (auto& val : iter::eraser_safe_append(eraserTest))
+    {
+      if (*val == 1)
+      {
+        foundIndex = val.index();
+      }
+    }
+    if (!IsSame(eraserTest, T{ 1, 2, 3, 4 }) ||
+      foundIndex != 0)
+    {
+      std::cout << "Eraser test failed\n";
+      return false;
+    }
+  }
+
+  {
+    size_t foundIndex = 0;
+    T eraserTest = { 1,2,3,4 };
+    for (auto& val : iter::eraser_safe_append(eraserTest))
+    {
+      if (*val == 2)
+      {
+        foundIndex = val.index();
+      }
+    }
+    if (!IsSame(eraserTest, T{ 1, 2, 3, 4 }) ||
+      foundIndex != 1)
+    {
+      std::cout << "Eraser test failed\n";
+      return false;
+    }
+  }
+
+  {
+    size_t foundIndex = 0;
+    T eraserTest = { 1,2,3,4 };
+    for (auto& val : iter::eraser_safe_append(eraserTest))
+    {
+      if (*val == 3)
+      {
+        foundIndex = val.index();
+      }
+    }
+    if (!IsSame(eraserTest, T{ 1, 2, 3, 4 }) ||
+      foundIndex != 2)
+    {
+      std::cout << "Eraser test failed\n";
+      return false;
+    }
+  }
+
+  {
+    size_t foundIndex = 0;
+    T eraserTest = { 1,2,3,4 };
+    for (auto& val : iter::eraser_safe_append(eraserTest))
+    {
+      if (*val == 4)
+      {
+        foundIndex = val.index();
+      }
+    }
+    if (!IsSame(eraserTest, T{ 1, 2, 3, 4 }) ||
+      foundIndex != 3)
+    {
+      std::cout << "Eraser test failed\n";
+      return false;
+    }
+  }
+
+
+  ////
+
+  {
+    size_t foundIndex = 0;
+    T eraserTest = { 1,2,3,4 };
+    for (auto& val : iter::eraser_safe_append(eraserTest))
+    {
+      if (*val == 1)
+      {
+        foundIndex = val.index();
+        break;
+      }
+    }
+    if (!IsSame(eraserTest, T{ 1, 2, 3, 4 }) ||
+      foundIndex != 0)
+    {
+      std::cout << "Eraser test failed\n";
+      return false;
+    }
+  }
+
+  {
+    size_t foundIndex = 0;
+    T eraserTest = { 1,2,3,4 };
+    for (auto& val : iter::eraser_safe_append(eraserTest))
+    {
+      if (*val == 2)
+      {
+        foundIndex = val.index();
+        break;
+      }
+    }
+    if (!IsSame(eraserTest, T{ 1, 2, 3, 4 }) ||
+      foundIndex != 1)
+    {
+      std::cout << "Eraser test failed\n";
+      return false;
+    }
+  }
+
+  {
+    size_t foundIndex = 0;
+    T eraserTest = { 1,2,3,4 };
+    for (auto& val : iter::eraser_safe_append(eraserTest))
+    {
+      if (*val == 3)
+      {
+        foundIndex = val.index();
+        break;
+      }
+    }
+    if (!IsSame(eraserTest, T{ 1, 2, 3, 4 }) ||
+      foundIndex != 2)
+    {
+      std::cout << "Eraser test failed\n";
+      return false;
+    }
+  }
+
+  {
+    size_t foundIndex = 0;
+    T eraserTest = { 1,2,3,4 };
+    for (auto& val : iter::eraser_safe_append(eraserTest))
+    {
+      if (*val == 4)
+      {
+        foundIndex = val.index();
+        break;
+      }
+    }
+    if (!IsSame(eraserTest, T{ 1, 2, 3, 4 }) ||
+      foundIndex != 3)
+    {
+      std::cout << "Eraser test failed\n";
+      return false;
+    }
+  }
+
+
+  ////
+
+  {
+    size_t foundIndex = 0;
+    T eraserTest = { 1,2,3,4 };
+    for (auto& val : iter::eraser_safe_append(eraserTest))
+    {
+      if (*val == 1)
+      {
+        val.mark_for_erase();
+        foundIndex = val.index();
+      }
+    }
+    if (!IsSame(eraserTest, T{ 2, 3, 4 }) ||
+      foundIndex != 0)
+    {
+      std::cout << "Eraser test failed\n";
+      return false;
+    }
+  }
+  {
+    size_t foundIndex = 0;
+    T eraserTest = { 1,2,3,4 };
+    for (auto& val : iter::eraser_safe_append(eraserTest))
+    {
+      if (*val == 2)
+      {
+        val.mark_for_erase();
+        foundIndex = val.index();
+      }
+    }
+    if (!IsSame(eraserTest, T{ 1, 3, 4 }) ||
+      foundIndex != 1)
+    {
+      std::cout << "Eraser test failed\n";
+      return false;
+    }
+  }
+
+  {
+    size_t foundIndex = 0;
+    T eraserTest = { 1,2,3,4 };
+    for (auto& val : iter::eraser_safe_append(eraserTest))
+    {
+      if (*val == 3)
+      {
+        val.mark_for_erase();
+        foundIndex = val.index();
+      }
+    }
+    if (!IsSame(eraserTest, T{ 1, 2, 4 }) ||
+      foundIndex != 2)
+    {
+      std::cout << "Eraser test failed\n";
+      return false;
+    }
+  }
+  {
+    size_t foundIndex = 0;
+    T eraserTest = { 1,2,3,4 };
+    for (auto& val : iter::eraser_safe_append(eraserTest))
+    {
+      if (*val == 4)
+      {
+        val.mark_for_erase();
+        foundIndex = val.index();
+      }
+    }
+    if (!IsSame(eraserTest, T{ 1, 2, 3 }) ||
+      foundIndex != 3)
+    {
+      std::cout << "Eraser test failed\n";
+      return false;
+    }
+  }
+
+  // Eraser break early tests
+  {
+    size_t foundIndex = 0;
+    T eraserTest = { 1,2,3,4 };
+    for (auto& val : iter::eraser_safe_append(eraserTest))
+    {
+      if (*val == 1)
+      {
+        val.mark_for_erase();
+        foundIndex = val.index();
+        break;
+      }
+    }
+    if (!IsSame(eraserTest, T{ 2, 3, 4 }) ||
+      foundIndex != 0)
+    {
+      std::cout << "Eraser test failed\n";
+      return false;
+    }
+  }
+  {
+    size_t foundIndex = 0;
+    T eraserTest = { 1,2,3,4 };
+    for (auto& val : iter::eraser_safe_append(eraserTest))
+    {
+      if (*val == 2)
+      {
+        val.mark_for_erase();
+        foundIndex = val.index();
+        break;
+      }
+    }
+    if (!IsSame(eraserTest, T{ 1, 3, 4 }) ||
+      foundIndex != 1)
+    {
+      std::cout << "Eraser test failed\n";
+      return false;
+    }
+  }
+
+  {
+    size_t foundIndex = 0;
+    T eraserTest = { 1,2,3,4 };
+    for (auto& val : iter::eraser_safe_append(eraserTest))
+    {
+      if (*val == 3)
+      {
+        val.mark_for_erase();
+        foundIndex = val.index();
+        break;
+      }
+    }
+    if (!IsSame(eraserTest, T{ 1, 2, 4 }) ||
+      foundIndex != 2)
+    {
+      std::cout << "Eraser test failed\n";
+      return false;
+    }
+  }
+  {
+    size_t foundIndex = 0;
+    T eraserTest = { 1,2,3,4 };
+    for (auto& val : iter::eraser_safe_append(eraserTest))
+    {
+      if (*val == 4)
+      {
+        val.mark_for_erase();
+        foundIndex = val.index();
+        break;
+      }
+    }
+    if (!IsSame(eraserTest, T{ 1, 2, 3 }) ||
+      foundIndex != 3)
+    {
+      std::cout << "Eraser test failed\n";
+      return false;
+    }
+  }
+
+  {
+    T eraserTest = { 1,2,3,4 };
+    for (auto& val : iter::eraser_safe_append(eraserTest))
+    {
+      if (*val == 4)
+      {
+        break;
+      }
+      else
+      {
+        val.mark_for_erase();
+      }
+    }
+    if (!IsSame(eraserTest, T{ 4 }))
+    {
+      std::cout << "Eraser test failed\n";
+      return false;
+    }
+  }
+
+  // Appending eraser tests
+  {
+    T eraserTest = { 1,2,3,4 };
+    for (auto& val : iter::eraser_safe_append(eraserTest))
+    {
+      *val;
+      eraserTest.push_back(5);
+    }
+    if (!IsSame(eraserTest, T{ 1, 2, 3, 4, 5, 5, 5, 5}))
+    {
+      std::cout << "Eraser test failed\n";
+      return false;
+    }
+  }
+
+
+  ////
+
+  {
+    size_t foundIndex = 0;
+    T eraserTest = { 1,2,3,4 };
+    for (auto& val : iter::eraser_safe_append(eraserTest))
+    {
+      if (*val == 1)
+      {
+        val.mark_for_erase();
+        foundIndex = val.index();
+      }
+      eraserTest.push_back(5);
+    }
+    if (!IsSame(eraserTest, T{ 2, 3, 4, 5, 5, 5, 5 }) ||
+      foundIndex != 0)
+    {
+      std::cout << "Eraser test failed\n";
+      return false;
+    }
+  }
+  {
+    size_t foundIndex = 0;
+    T eraserTest = { 1,2,3,4 };
+    for (auto& val : iter::eraser_safe_append(eraserTest))
+    {
+      if (*val == 2)
+      {
+        val.mark_for_erase();
+        foundIndex = val.index();
+      }
+      eraserTest.push_back(5);
+    }
+    if (!IsSame(eraserTest, T{ 1, 3, 4, 5, 5, 5, 5 }) ||
+      foundIndex != 1)
+    {
+      std::cout << "Eraser test failed\n";
+      return false;
+    }
+  }
+
+  {
+    size_t foundIndex = 0;
+    T eraserTest = { 1,2,3,4 };
+    for (auto& val : iter::eraser_safe_append(eraserTest))
+    {
+      if (*val == 3)
+      {
+        val.mark_for_erase();
+        foundIndex = val.index();
+      }
+      eraserTest.push_back(5);
+    }
+    if (!IsSame(eraserTest, T{ 1, 2, 4, 5, 5, 5, 5 }) ||
+      foundIndex != 2)
+    {
+      std::cout << "Eraser test failed\n";
+      return false;
+    }
+  }
+  {
+    size_t foundIndex = 0;
+    T eraserTest = { 1,2,3,4 };
+    for (auto& val : iter::eraser_safe_append(eraserTest))
+    {
+      if (*val == 4)
+      {
+        val.mark_for_erase();
+        foundIndex = val.index();
+      }
+      eraserTest.push_back(5);
+    }
+    if (!IsSame(eraserTest, T{ 1, 2, 3, 5, 5, 5, 5 }) ||
+      foundIndex != 3)
+    {
+      std::cout << "Eraser test failed\n";
+      return false;
+    }
+  }
+
+  // Eraser break early tests
+  {
+    size_t foundIndex = 0;
+    T eraserTest = { 1,2,3,4 };
+    for (auto& val : iter::eraser_safe_append(eraserTest))
+    {
+      if (*val == 1)
+      {
+        val.mark_for_erase();
+        foundIndex = val.index();
+        break;
+      }
+      eraserTest.push_back(5);
+    }
+    if (!IsSame(eraserTest, T{ 2, 3, 4 }) ||
+      foundIndex != 0)
+    {
+      std::cout << "Eraser test failed\n";
+      return false;
+    }
+  }
+  {
+    size_t foundIndex = 0;
+    T eraserTest = { 1,2,3,4 };
+    for (auto& val : iter::eraser_safe_append(eraserTest))
+    {
+      if (*val == 2)
+      {
+        val.mark_for_erase();
+        foundIndex = val.index();
+        break;
+      }
+      eraserTest.push_back(5);
+    }
+    if (!IsSame(eraserTest, T{ 1, 3, 4, 5,}) ||
+      foundIndex != 1)
+    {
+      std::cout << "Eraser test failed\n";
+      return false;
+    }
+  }
+
+  {
+    size_t foundIndex = 0;
+    T eraserTest = { 1,2,3,4 };
+    for (auto& val : iter::eraser_safe_append(eraserTest))
+    {
+      if (*val == 3)
+      {
+        val.mark_for_erase();
+        foundIndex = val.index();
+        break;
+      }
+      eraserTest.push_back(5);
+    }
+    if (!IsSame(eraserTest, T{ 1, 2, 4, 5, 5 }) ||
+      foundIndex != 2)
+    {
+      std::cout << "Eraser test failed\n";
+      return false;
+    }
+  }
+  {
+    size_t foundIndex = 0;
+    T eraserTest = { 1,2,3,4 };
+    for (auto& val : iter::eraser_safe_append(eraserTest))
+    {
+      if (*val == 4)
+      {
+        val.mark_for_erase();
+        foundIndex = val.index();
+        break;
+      }
+      eraserTest.push_back(5);
+    }
+    if (!IsSame(eraserTest, T{ 1, 2, 3, 5, 5, 5 }) ||
+      foundIndex != 3)
+    {
+      std::cout << "Eraser test failed\n";
+      return false;
+    }
+  }
+
+  {
+    T eraserTest = { 1,2,3,4 };
+    for (auto& val : iter::eraser_safe_append(eraserTest))
+    {
+      if (*val == 4)
+      {
+        break;
+      }
+      else
+      {
+        val.mark_for_erase();
+      }
+      eraserTest.push_back(5);
+    }
+    if (!IsSame(eraserTest, T{ 4, 5, 5, 5 }))
+    {
+      std::cout << "Eraser test failed\n";
+      return false;
+    }
+  }
+
+  return true;
+}
+
+
+template <typename T>
+bool TypeAppendStringTests()
+{
+  // Eraser tests
+  {
+    size_t foundIndex = 0;
+    T eraserTest = { "1","2","3","4" };
+    for (auto& val : iter::eraser_safe_append(eraserTest))
+    {
+      if (*val == "1")
+      {
+        val.mark_for_erase();
+        foundIndex = val.index();
+      }
+    }
+    if (!IsSame(eraserTest, T{ "2", "3", "4" }) ||
+      foundIndex != 0)
+    {
+      std::cout << "Eraser test failed\n";
+      return false;
+    }
+  }
+  {
+    size_t foundIndex = 0;
+    T eraserTest = { "1","2","3","4" };
+    for (auto& val : iter::eraser_safe_append(eraserTest))
+    {
+      if (*val == "2")
+      {
+        val.mark_for_erase();
+        foundIndex = val.index();
+      }
+    }
+    if (!IsSame(eraserTest, T{ "1", "3", "4" }) ||
+      foundIndex != 1)
+    {
+      std::cout << "Eraser test failed\n";
+      return false;
+    }
+  }
+
+  {
+    size_t foundIndex = 0;
+    T eraserTest = { "1","2","3","4" };
+    for (auto& val : iter::eraser_safe_append(eraserTest))
+    {
+      if (*val == "3")
+      {
+        val.mark_for_erase();
+        foundIndex = val.index();
+      }
+    }
+    if (!IsSame(eraserTest, T{ "1", "2", "4" }) ||
+      foundIndex != 2)
+    {
+      std::cout << "Eraser test failed\n";
+      return false;
+    }
+  }
+  {
+    size_t foundIndex = 0;
+    T eraserTest = { "1","2","3","4" };
+    for (auto& val : iter::eraser_safe_append(eraserTest))
+    {
+      if (*val == "4")
+      {
+        val.mark_for_erase();
+        foundIndex = val.index();
+      }
+    }
+    if (!IsSame(eraserTest, T{ "1", "2", "3" }) ||
+      foundIndex != 3)
+    {
+      std::cout << "Eraser test failed\n";
+      return false;
+    }
+  }
+
+  // Eraser break early tests
+  {
+    size_t foundIndex = 0;
+    T eraserTest = { "1","2","3","4" };
+    for (auto& val : iter::eraser_safe_append(eraserTest))
+    {
+      if (*val == "1")
+      {
+        val.mark_for_erase();
+        foundIndex = val.index();
+        break;
+      }
+    }
+    if (!IsSame(eraserTest, T{ "2", "3", "4" }) ||
+      foundIndex != 0)
+    {
+      std::cout << "Eraser test failed\n";
+      return false;
+    }
+  }
+  {
+    size_t foundIndex = 0;
+    T eraserTest = { "1","2","3","4" };
+    for (auto& val : iter::eraser_safe_append(eraserTest))
+    {
+      if (*val == "2")
+      {
+        val.mark_for_erase();
+        foundIndex = val.index();
+        break;
+      }
+    }
+    if (!IsSame(eraserTest, T{ "1", "3", "4" }) ||
+      foundIndex != 1)
+    {
+      std::cout << "Eraser test failed\n";
+      return false;
+    }
+  }
+
+  {
+    size_t foundIndex = 0;
+    T eraserTest = { "1","2","3","4" };
+    for (auto& val : iter::eraser_safe_append(eraserTest))
+    {
+      if (*val == "3")
+      {
+        val.mark_for_erase();
+        foundIndex = val.index();
+        break;
+      }
+    }
+    if (!IsSame(eraserTest, T{ "1", "2", "4" }) ||
+      foundIndex != 2)
+    {
+      std::cout << "Eraser test failed\n";
+      return false;
+    }
+  }
+  {
+    size_t foundIndex = 0;
+    T eraserTest = { "1","2","3","4" };
+    for (auto& val : iter::eraser_safe_append(eraserTest))
+    {
+      if (*val == "4")
+      {
+        val.mark_for_erase();
+        foundIndex = val.index();
+        break;
+      }
+    }
+    if (!IsSame(eraserTest, T{ "1", "2", "3" }) ||
+      foundIndex != 3)
+    {
+      std::cout << "Eraser test failed\n";
+      return false;
+    }
+  }
+
+  {
+    T eraserTest = { "1","2","3","4" };
+    for (auto& val : iter::eraser_safe_append(eraserTest))
+    {
+      if (*val == "4")
+      {
+        break;
+      }
+      else
+      {
+        val.mark_for_erase();
+      }
+    }
+    if (!IsSame(eraserTest, T{ "4" }))
+    {
+      std::cout << "Eraser test failed\n";
+      return false;
+    }
+  }
+
+  // Eraser tests with append
+  {
+    size_t foundIndex = 0;
+    T eraserTest = { "1","2","3","4" };
+    for (auto& val : iter::eraser_safe_append(eraserTest))
+    {
+      if (*val == "1")
+      {
+        val.mark_for_erase();
+        foundIndex = val.index();
+      }
+      eraserTest.push_back("5");
+    }
+    if (!IsSame(eraserTest, T{ "2", "3", "4", "5", "5", "5", "5" }) ||
+      foundIndex != 0)
+    {
+      std::cout << "Eraser test failed\n";
+      return false;
+    }
+  }
+  {
+    size_t foundIndex = 0;
+    T eraserTest = { "1","2","3","4" };
+    for (auto& val : iter::eraser_safe_append(eraserTest))
+    {
+      if (*val == "2")
+      {
+        val.mark_for_erase();
+        foundIndex = val.index();
+      }
+      eraserTest.push_back("5");
+    }
+    if (!IsSame(eraserTest, T{ "1", "3", "4", "5", "5", "5", "5" }) ||
+      foundIndex != 1)
+    {
+      std::cout << "Eraser test failed\n";
+      return false;
+    }
+  }
+
+  {
+    size_t foundIndex = 0;
+    T eraserTest = { "1","2","3","4" };
+    for (auto& val : iter::eraser_safe_append(eraserTest))
+    {
+      if (*val == "3")
+      {
+        val.mark_for_erase();
+        foundIndex = val.index();
+      }
+      eraserTest.push_back("5");
+    }
+    if (!IsSame(eraserTest, T{ "1", "2", "4", "5", "5", "5", "5" }) ||
+      foundIndex != 2)
+    {
+      std::cout << "Eraser test failed\n";
+      return false;
+    }
+  }
+  {
+    size_t foundIndex = 0;
+    T eraserTest = { "1","2","3","4" };
+    for (auto& val : iter::eraser_safe_append(eraserTest))
+    {
+      if (*val == "4")
+      {
+        val.mark_for_erase();
+        foundIndex = val.index();
+      }
+      eraserTest.push_back("5");
+    }
+    if (!IsSame(eraserTest, T{ "1", "2", "3", "5", "5", "5", "5" }) ||
+      foundIndex != 3)
+    {
+      std::cout << "Eraser test failed\n";
+      return false;
+    }
+  }
+
+  // Eraser break early tests
+  {
+    size_t foundIndex = 0;
+    T eraserTest = { "1","2","3","4" };
+    for (auto& val : iter::eraser_safe_append(eraserTest))
+    {
+      if (*val == "1")
+      {
+        val.mark_for_erase();
+        foundIndex = val.index();
+        break;
+      }
+      eraserTest.push_back("5");
+    }
+    if (!IsSame(eraserTest, T{ "2", "3", "4" }) ||
+      foundIndex != 0)
+    {
+      std::cout << "Eraser test failed\n";
+      return false;
+    }
+  }
+  {
+    size_t foundIndex = 0;
+    T eraserTest = { "1","2","3","4" };
+    for (auto& val : iter::eraser_safe_append(eraserTest))
+    {
+      if (*val == "2")
+      {
+        val.mark_for_erase();
+        foundIndex = val.index();
+        break;
+      }
+      eraserTest.push_back("5");
+    }
+    if (!IsSame(eraserTest, T{ "1", "3", "4", "5" }) ||
+      foundIndex != 1)
+    {
+      std::cout << "Eraser test failed\n";
+      return false;
+    }
+  }
+
+  {
+    size_t foundIndex = 0;
+    T eraserTest = { "1","2","3","4" };
+    for (auto& val : iter::eraser_safe_append(eraserTest))
+    {
+      if (*val == "3")
+      {
+        val.mark_for_erase();
+        foundIndex = val.index();
+        break;
+      }
+      eraserTest.push_back("5");
+    }
+    if (!IsSame(eraserTest, T{ "1", "2", "4", "5", "5" }) ||
+      foundIndex != 2)
+    {
+      std::cout << "Eraser test failed\n";
+      return false;
+    }
+  }
+  {
+    size_t foundIndex = 0;
+    T eraserTest = { "1","2","3","4" };
+    for (auto& val : iter::eraser_safe_append(eraserTest))
+    {
+      if (*val == "4")
+      {
+        val.mark_for_erase();
+        foundIndex = val.index();
+        break;
+      }
+      eraserTest.push_back("5");
+    }
+    if (!IsSame(eraserTest, T{ "1", "2", "3", "5", "5", "5" }) ||
+      foundIndex != 3)
+    {
+      std::cout << "Eraser test failed\n";
+      return false;
+    }
+  }
+
+  {
+    T eraserTest = { "1","2","3","4" };
+    for (auto& val : iter::eraser_safe_append(eraserTest))
+    {
+      if (*val == "4")
+      {
+        break;
+      }
+      else
+      {
+        val.mark_for_erase();
+      }
+      eraserTest.push_back("5");
+    }
+    if (!IsSame(eraserTest, T{ "4", "5", "5", "5" }))
+    {
+      std::cout << "Eraser test failed\n";
+      return false;
+    }
+  }
+
+  // Large append test
+  {
+    T eraserTest = { "1","2","3","4" };
+    for (auto& val : iter::eraser_safe_append(eraserTest))
+    {
+      if (*val == "4")
+      {
+        break;
+      }
+      else
+      {
+        val.mark_for_erase();
+      }
+      for (int i = 0; i < 10; i++)
+      {
+        eraserTest.push_back("5");
+      }
+    }
+    if (!IsSame(eraserTest, T{ "4", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5", "5" }))
+    {
+      std::cout << "Eraser test failed\n";
+      return false;
+    }
+  }
+
+  return true;
+}
+
+
 bool Iterator_UnitTests()
 {
   // Reverse and counter tests
@@ -1243,6 +2221,16 @@ bool Iterator_UnitTests()
     return false;
   }
    
+  // Eraser append type Tests
+  if (!TypeAppendIntTests<std::vector<int>>())
+  {
+    return false;
+  }
+
+  if (!TypeAppendStringTests<std::vector<std::string>>())
+  {
+    return false;
+  }
 
   return true;
 }
