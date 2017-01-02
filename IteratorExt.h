@@ -141,8 +141,8 @@ public:
 ///
 ///        Usage: for(auto& value : iter::eraser_safe_append(vector))
 ///               { 
-///                 auto& data = *value;         // Can safely store refernce to item under iteration
-///                 vector.push_back(newValue);  // Can add new data to vector (even if vector resizes)
+///                 auto& data = *value;         // Can safely store reference to item under iteration
+///                 vector.push_back(newValue);  // Can append new data to vector (even if vector resizes)
 ///                 if(someCondition == data)
 ///                 {
 ///                   value.mark_for_erase(); // Item will still be valid for remainer of iteration and will be erased in a future iteration

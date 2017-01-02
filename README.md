@@ -34,6 +34,23 @@ If preserving order is not important:
   }
 ```
 
+## IteratorExt: eraser_safe_append()
+Helper to remove elements and append to a container while iterating it.
+
+```c++   
+  for(auto& item : iter::eraser_safe_append(vector))
+  {
+    auto& data = *value;         // Can safely store reference to item under iteration
+    vector.push_back(newValue);  // Can append new data to vector (even if vector resizes)
+
+    if(data == value)
+    {
+      item.mark_for_erase();  // Item is marked for deletion, but is still valid until end of loop iteration
+      item.index(); // Get the origional index of the item in the array 
+    }
+  }
+```
+
 ## Iterator: reverse()
 This helper simply reverses the iteration of the container
 ```c++
