@@ -152,7 +152,7 @@ public:
 ///        The original index of the item in the array can also be retrieved by calling value.index(). This may not be optimal on some container types.
 ///
 ///        IMPORTANT: Do not attempt to access any elements of the array being iterated on manually while iteration is occuring. 
-///                   eg. If appending, do not attempt to insert uniquely by find duplicates from the current array - element may be marked for deletion or be temporally removed from the array. 
+///                   eg. If appending, do not attempt to insert uniquely by finding a duplicate from the current array - an element may be marked for deletion or be temporally removed from the array. 
 ///
 ///        IMPORTANT: Do not store a pointer to any data inside the array being iterated on outside the for-loop scope - data is moved between each iteration.
 ///        Eg. Do not do this: 
