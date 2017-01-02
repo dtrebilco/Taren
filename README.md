@@ -19,7 +19,7 @@ Read about the performance of these iterators in [this article.](./Articles/Eras
     if(*item == value) // Access item via deref
     {
       item.mark_for_erase();  // Item is marked for deletion, but is still valid until end of loop iteration
-      item.index(); // Get the origional index of the item in the array 
+      item.index(); // Get the original index of the item in the array 
     }
   }
 ```
@@ -48,7 +48,7 @@ Read about the usage of this iterator in [this article.](./Articles/EraserSafeAp
     if(data == value)
     {
       item.mark_for_erase();  // Item is marked for deletion, but is still valid until end of loop iteration
-      item.index(); // Get the origional index of the item in the array 
+      item.index(); // Get the original index of the item in the array 
     }
   }
 ```

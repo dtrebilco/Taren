@@ -196,7 +196,7 @@ public:
 ///
 ///        Note that the value returned is a smart pointer that needs to be de-referenced to access the value 
 ///        (either with *value or value-> )
-///        The origional index of the item in the array can also be retrieved by calling value.index(). This may not be optimal on some container types.
+///        The original index of the item in the array can also be retrieved by calling value.index(). This may not be optimal on some container types.
 ///        
 ///        IMPORTANT: Do not store a pointer to any data inside the array being iterated on outside the for-loop scope - data may be moved between each iteration.
 ///        See iter::unordered_eraser() for a relaxation of this rule

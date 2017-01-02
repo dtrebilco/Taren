@@ -1,5 +1,5 @@
 # Eraser Profile
-This article discribes the performance differences of the eraser() and unordered_eraser() helper iterators.
+This article describes the performance differences of the eraser() and unordered_eraser() helper iterators.
 
 
 ## Introduction

@@ -149,7 +149,7 @@ public:
 ///
 ///        Note that the value returned is a smart pointer that needs to be de-referenced to access the value 
 ///        (either with *value or value-> )
-///        The origional index of the item in the array can also be retrieved by calling value.index(). This may not be optimal on some container types.
+///        The original index of the item in the array can also be retrieved by calling value.index(). This may not be optimal on some container types.
 ///
 ///        IMPORTANT: Do not attempt to access any elements of the array being iterated on manually while iteration is occuring. 
 ///                   eg. If appending, do not attempt to insert uniquely by find duplicates from the current array - element may be marked for deletion or be temporally removed from the array. 

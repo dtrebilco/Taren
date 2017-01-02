@@ -35,7 +35,7 @@ In the update of the manager you typically want to destroy any pfx that are comp
   }
 ```
 
-However, as happens in manay manager classes, the array being iterated on may be added to while iterating. For our example, a new particle type is added that is a firework that spawns other particles on death.
+However, as happens in many manager classes, the array being iterated on may be added to while iterating. For our example, a new particle type is added that is a firework that spawns other particles on death.
 
 ```c++
   bool FireworkPFX::Update()
@@ -114,8 +114,8 @@ Note that it is safe to take references to the current iteration item and it wil
 
 The reason this iterator type is in the "IteratorExt.h" extension file is due to some strict rules when using this iterator and updating the data.
 
-* *Do not* attempt to access any elements of the array being iterated on manually while iteration is occuring.  
+* *Do not* attempt to access any elements of the array being iterated on manually while iteration is occurring.  
  eg. If appending, do not attempt to insert uniquely by find duplicates from the current array - an element may be marked for deletion or be temporally removed from the array. 
 
 
-* *Do not* attempt to insert into the middle of the array during iteration - only appends are allowed. For this reason the array should be guarded by accesor functions.
+* *Do not* attempt to insert into the middle of the array during iteration - only appends are allowed. For this reason the array should be guarded by accessor functions.
