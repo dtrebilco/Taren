@@ -37,6 +37,8 @@ If preserving order is not important:
 ## IteratorExt: eraser_safe_append()
 Helper to remove elements and append to a container while iterating it.
 
+Read about the usage of this iterator in [this article.](./Articles/EraserSafeAppend.md)
+
 ```c++   
   for(auto& item : iter::eraser_safe_append(vector))
   {
