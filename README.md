@@ -5,7 +5,7 @@ Taren code is standalone and only makes use of some STL.
 # Taren articles
 Along with the documentation is a series of articles explaining why certain functions exist.
 - [Eraser iterators.](./Articles/EraserProfile.md)
-
+- [Eraser append.](./Articles/EraserSafeAppend.md)
 
 # Taren functions
 ## Iterator: eraser() and unordered_eraser()
