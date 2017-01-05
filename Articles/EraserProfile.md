@@ -52,6 +52,25 @@ A slightly more modern approach is to use ```std::remove_if()``` with a lambda
   
 But this is a bit ugly to type, and may be error prone in ensuring the correct container is always used.
 
+Another way is to copy out the array data you want to keep into a temporary working buffer
+```c++    
+      size_t size = 0;
+      copyData.resize(array.size()); // Existing temp buffer
+      for (auto& v : array)
+      {
+        if (v != delete)
+        {
+          copyData[size] = std::move(v);
+          size++;
+        }
+      }
+      copyData.resize(size);
+      array.swap(copyData);
+      copyData.resize(0);
+```
+
+But this can be quite error prone
+
 ## eraser() and unordered_eraser()
 
 Presented is a safe and performant way of removing elements while iterating on them.
@@ -84,7 +103,7 @@ If preserving order is not important:
 Below is presented performance graphs of the different ways of removing elements from an array as presented in the introduction. 
 Source code for the tests can be found in Iterator_Profile.cpp.
 
-All timings were done with VisualStudio 2017 RC (x64) on a Intel i7-4790 3.6GHz, 16GB ram @ 1866MHz, Windows 10.
+All timings were done with VisualStudio 2017 RC (x64) on a Intel i7-6700 3.4GHz, 16GB ram @ 2133MHz, Windows 10.
 
 The tests were done using std::vector data structure as linear data structures are most often used in performance code.
 

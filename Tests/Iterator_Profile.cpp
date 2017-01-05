@@ -134,6 +134,43 @@ void GenericRemoveIf(const T & a_data, const V a_value)
 }
 
 template <typename T, typename V>
+void RemoveArrayCopy(const T & a_data, const V a_value)
+{
+  T copyData;
+  copyData.reserve(a_data.size());
+
+  TIMER_START
+    for (auto& d : process)
+    {
+      // This code is about 2x slower than what is below
+      //copyData.resize(0);
+      //for (auto& v : d)
+      //{
+      //  if (v != a_value)
+      //  {
+      //    copyData.push_back(std::move(v));
+      //  }
+      //}
+      //d.swap(copyData);
+
+      copyData.resize(d.size());
+      int32_t size = 0;
+      for (auto& v : d)
+      {
+        if (v != a_value)
+        {
+          copyData[size] = std::move(v);
+          size++;
+        }
+      }
+      copyData.resize(size);
+      d.swap(copyData);
+    }
+  TIMER_END
+}
+
+
+template <typename T, typename V>
 void GenericRemoveFirst(const T & a_data, const V a_value)
 {
 
@@ -275,6 +312,7 @@ void RunTest(const T & a_data, const V & a_value, bool a_firstOnlyTests = false)
   cout << "  unordered_eraser : "; ProfileRemove(a_data, a_value, true);
   cout << "  std::remove : "; GenericRemove(a_data, a_value);
   cout << "  std::remove_if : "; GenericRemoveIf(a_data, a_value);
+  cout << "  array_copy : "; RemoveArrayCopy(a_data, a_value);
   cout << "  index : "; ProfileIndex(a_data, a_value);
   cout << "  iterator : "; ProfileIterator(a_data, a_value);
 
@@ -297,6 +335,7 @@ void WriteHeaders()
   s_csvFile << "unordered_eraser,";
   s_csvFile << "std::remove,";
   s_csvFile << "std::remove_if,";
+  s_csvFile << "array_copy,";
   s_csvFile << "index,"; 
   s_csvFile << "iterator,"; 
 
