@@ -52,7 +52,7 @@ A slightly more modern approach is to use ```std::remove_if()``` with a lambda
   
 But this is a bit ugly to type, and may be error prone in ensuring the correct container is always used.
 
-Another way is to copy out the array data you want to keep into a temporary working buffer
+Another way is to copy out the array data you want to keep into a temporary working buffer.
 ```c++    
       size_t size = 0;
       copyData.resize(array.size()); // Existing temp buffer
@@ -69,7 +69,7 @@ Another way is to copy out the array data you want to keep into a temporary work
       copyData.resize(0);
 ```
 
-But this can be quite error prone
+But this can be quite error prone.
 
 ## eraser() and unordered_eraser()
 
