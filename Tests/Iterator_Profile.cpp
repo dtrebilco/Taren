@@ -137,7 +137,7 @@ template <typename T, typename V>
 void RemoveArrayCopy(const T & a_data, const V a_value)
 {
   T copyData;
-  copyData.reserve(a_data.size());
+  copyData.resize(a_data.size());
 
   TIMER_START
     for (auto& d : process)

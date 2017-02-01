@@ -1,0 +1,16 @@
+#include "EnumMacro_Base.h"
+
+
+
+SEQUENTIAL_ENUM_BODY(Test)
+VALUE_ENUM_BODY(TestVal)
+VALUE_ENUM_BODY(TestValDup)
+
+SEQUENTIAL_ENUM_BODYSCOPE(Test, ClassTest)
+VALUE_ENUM_BODYSCOPE(TestVal, ClassTest)
+
+SEQUENTIAL_ENUM_BODYSCOPE(Test, NameTest)
+VALUE_ENUM_BODYSCOPE(TestVal, NameTest)
+
+
+
