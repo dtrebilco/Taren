@@ -40,7 +40,7 @@ This is obviously error prone if the enum ever changes. One way of helping keep 
     "Value2",
     "Value3"
   };
-  static_assert(MyEnum::COUNT == (sizeof(s_myEnumStr)/ s_myEnumStr[0]), "Update lookup table");
+  static_assert(MyEnum::COUNT == (sizeof(s_myEnumStr)/ sizeof(s_myEnumStr[0])), "Update lookup table");
 ```
 
 But this is still error prone if enums change naming or ordering. This will also not work well if the enums are assigned non-sequential values.
