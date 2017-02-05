@@ -59,7 +59,7 @@ Usage - First define the enum values with a define:
 
  Values can also be assigned to each enum:
  ```c++
-#define MyEnumVal_EnumValues(EV) \
+#define MyEnum_EnumValues(EV) \
             EV(Value1) \
             EV(Value2, 1 << 8) \
             EV(value3, Value2 | Value1)

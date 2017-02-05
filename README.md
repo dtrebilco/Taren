@@ -92,7 +92,7 @@ This helper simply provides a way to get the index of the iteration item (eraser
 These macros provide a way to iterate enum value and associated strings.
 See the [article.](./Articles/EnumMacros.md) for more details.
 ```c++
-#define MyEnumVal_EnumValues(EV) \
+#define MyEnum_EnumValues(EV) \
             EV(Value1) \
             EV(Value2, 1 << 8) \
             EV(value3, Value2 | Value1) 
