@@ -22,10 +22,28 @@
     <ClCompile Include="Iterator_Profile.cpp">
       <Filter>Tests</Filter>
     </ClCompile>
+    <ClCompile Include="EnumMacro_Base.cpp">
+      <Filter>Tests</Filter>
+    </ClCompile>
+    <ClCompile Include="EnumMacro_UnitTests.cpp">
+      <Filter>Tests</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Iterator.h">
       <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Slice.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\IteratorExt.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\EnumMacros.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="EnumMacro_Base.h">
+      <Filter>Tests</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -33,6 +51,12 @@
       <Filter>Tests</Filter>
     </None>
     <None Include="..\Articles\EraserProfile.md">
+      <Filter>Articles</Filter>
+    </None>
+    <None Include="..\Articles\EraserSafeAppend.md">
+      <Filter>Articles</Filter>
+    </None>
+    <None Include="..\Articles\EnumMacros.md">
       <Filter>Articles</Filter>
     </None>
   </ItemGroup>

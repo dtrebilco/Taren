@@ -241,14 +241,22 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="CppTemplates.cpp" />
+    <ClCompile Include="EnumMacro_Base.cpp" />
+    <ClCompile Include="EnumMacro_UnitTests.cpp" />
     <ClCompile Include="Iterator_Profile.cpp" />
     <ClCompile Include="Iterator_UnitTests.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\EnumMacros.h" />
     <ClInclude Include="..\Iterator.h" />
+    <ClInclude Include="..\IteratorExt.h" />
+    <ClInclude Include="..\Slice.h" />
+    <ClInclude Include="EnumMacro_Base.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="..\Articles\EnumMacros.md" />
     <None Include="..\Articles\EraserProfile.md" />
+    <None Include="..\Articles\EraserSafeAppend.md" />
     <None Include="..\README.md" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

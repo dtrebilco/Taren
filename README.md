@@ -6,6 +6,7 @@ Taren code is standalone and only makes use of some STL.
 Along with the documentation is a series of articles explaining why certain functions exist.
 - [Eraser iterators.](./Articles/EraserProfile.md)
 - [Eraser append.](./Articles/EraserSafeAppend.md)
+- [Enum Macros.](./Articles/EnumMacros.md)
 
 # Taren functions
 ## Iterator: eraser() and unordered_eraser()
@@ -86,3 +87,35 @@ This helper simply provides a way to get the index of the iteration item (eraser
     }
   }
 ```
+
+## EnumMacros VALUE_ENUM() / SEQUENTIAL_ENUM()
+These macros provide a way to iterate enum value and associated strings.
+See the [article.](./Articles/EnumMacros.md) for more details.
+```c++
+#define MyEnumVal_EnumValues(EV) \
+            EV(Value1) \
+            EV(Value2, 1 << 8) \
+            EV(value3, Value2 | Value1) 
+VALUE_ENUM(MyEnum, uint32_t)
+VALUE_ENUM_BODY(MyEnum)
+```
+
+## EnumMacros ENUM_FLAG_OPS()
+This macro is used to generate the bitwise operations generally needed if the enum is a flag type. 
+```c++
+enum class BitFlags
+{
+  Flag1 =  1 << 0,
+  Flag2 =  1 << 1,
+  Flag3 =  1 << 2,
+};
+ENUM_FLAG_OPS(BitFlags)
+
+// Allows the below bit operations:
+BitFlags bitOp1 = BitFlags::Flag1 | BitFlags::Flag2;
+BitFlags bitOp2 = BitFlags::Flag1 & BitFlags::Flag2;
+BitFlags bitOp3 = BitFlags::Flag1 ^ BitFlags::Flag2;
+BitFlags bitOp4 = ~BitFlags::Flag1;
+
+```
+
