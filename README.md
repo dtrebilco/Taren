@@ -89,8 +89,8 @@ This helper simply provides a way to get the index of the iteration item (eraser
 ```
 
 ## EnumMacros VALUE_ENUM() / SEQUENTIAL_ENUM()
-These macros provide a way to iterate enum value and associated strings.
-See the [article.](./Articles/EnumMacros.md) for more details.
+These macros provide a way to iterate enum values and associated strings.
+See the [article](./Articles/EnumMacros.md) for more details.
 ```c++
 #define MyEnum_EnumValues(EV) \
             EV(Value1) \
@@ -98,10 +98,18 @@ See the [article.](./Articles/EnumMacros.md) for more details.
             EV(value3, Value2 | Value1) 
 VALUE_ENUM(MyEnum, uint32_t)
 VALUE_ENUM_BODY(MyEnum)
+
+// Can now do the below code
+const char* enumStr = MyEnum_Values::to_string(Value1);
+
+for (auto val : MyEnum_Values()) {
+    val.c_str() // Get string of enum
+    val.value() // Get enum value
 ```
 
 ## EnumMacros ENUM_FLAG_OPS()
 This macro is used to generate the bitwise operations generally needed if the enum is a flag type. 
+See the [article](./Articles/EnumMacros.md) for more details.
 ```c++
 enum class BitFlags
 {
