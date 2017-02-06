@@ -110,7 +110,7 @@ Using this code you can easily write code to convert from a string to an enum.
 (Not provided as every code base has different error handling and string requirements)
 
 
-Some solutons to this problem can be found:
+Some other solutons to this enum issue can be found at:
  - Better Enums (https://github.com/aantron/better-enums)
  - C++ proposial N4428 (possibly for C++20?)
 
