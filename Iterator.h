@@ -141,7 +141,7 @@ namespace iter
         if (!this->m_markRemove)
         {
           // Move the existing value to the new position
-          if (std::is_pod<ValueType>::value ||
+          if (std::is_trivially_copyable<ValueType>::value ||
             this->m_eraseStart != this->m_current)
           {
             *this->m_eraseStart = std::move(*this->m_current);
@@ -284,7 +284,7 @@ namespace iter
         {
           this->m_markRemove = false;
           --this->m_eraseStart;
-          if (std::is_pod<ValueType>::value ||
+          if (std::is_trivially_copyable<ValueType>::value ||
             this->m_current != this->m_eraseStart)
           {
             *this->m_current = std::move(*this->m_eraseStart);
@@ -314,7 +314,7 @@ namespace iter
         if (this->m_markRemove)
         {
           --this->m_eraseStart;
-          if (std::is_pod<ValueType>::value ||
+          if (std::is_trivially_copyable<ValueType>::value ||
             this->m_current != this->m_eraseStart)
           {
             *this->m_current = std::move(*this->m_eraseStart);
