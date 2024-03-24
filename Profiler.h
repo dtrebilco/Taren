@@ -128,7 +128,7 @@ namespace taren_profiler
 
   void ProfileTagBegin(const char* i_str)
   {
-    if (!g_pData->m_enabled)
+    if (!g_pData.m_enabled)
     {
       return;
     }
@@ -145,19 +145,19 @@ namespace taren_profiler
     newData.m_tag = i_str;
 
     // There is a race condition where a record could be added after the profiling has ended (m_enabled changed)- this is benign however
-    std::lock_guard<std::mutex> lock(g_pData->m_access);
-    if (g_pData->m_records.size() < g_pData->m_maxRecords)
+    std::lock_guard<std::mutex> lock(g_pData.m_access);
+    if (g_pData.m_records.size() < g_pData.m_maxRecords)
     {
-      g_pData->m_records.push_back(newData);
+      g_pData.m_records.push_back(newData);
 
       // Assign the time as the last possible thing
-      g_pData->m_records.back().m_time = clock::now();
+      g_pData.m_records.back().m_time = clock::now();
     }
   }
 
   void ProfileTagEnd()
   {
-    if (!g_pData->m_enabled)
+    if (!g_pData.m_enabled)
     {
       return;
     }
@@ -168,43 +168,33 @@ namespace taren_profiler
     newData.m_tag = nullptr;
 
     // There is a race condition where a record could be added after the profiling has ended (m_enabled changed)- this is benign however
-    std::lock_guard<std::mutex> lock(g_pData->m_access);
-    if (g_pData->m_records.size() < g_pData->m_maxRecords)
+    std::lock_guard<std::mutex> lock(g_pData.m_access);
+    if (g_pData.m_records.size() < g_pData.m_maxRecords)
     {
-      g_pData->m_records.push_back(newData);
+      g_pData.m_records.push_back(newData);
     }
   }
 
   bool IsProfiling()
   {
-    if (!g_pData)
-    {
-      return false;
-    }
-
-    return g_pData->m_enabled;
+    return g_pData.m_enabled;
   }
 
   bool Begin(size_t i_bufferSize)
   {
-    if (!g_pData)
-    {
-      return false;
-    }
-
-    std::lock_guard<std::mutex> lock(g_pData->m_access);
-    if (g_pData->m_enabled)
+    std::lock_guard<std::mutex> lock(g_pData.m_access);
+    if (g_pData.m_enabled)
     {
       return false;
     }
 
     // Clear all data (may have been some extra in buffers from previous enable)
-    g_pData->m_maxRecords = i_bufferSize / sizeof(ProfileRecord);
-    g_pData->m_records.resize(0);
-    g_pData->m_records.reserve(g_pData->m_maxRecords);
-    g_pData->m_startTime = clock::now();
+    g_pData.m_maxRecords = i_bufferSize / sizeof(ProfileRecord);
+    g_pData.m_records.resize(0);
+    g_pData.m_records.reserve(g_pData.m_maxRecords);
+    g_pData.m_startTime = clock::now();
 
-    g_pData->m_enabled = true;
+    g_pData.m_enabled = true;
     return true;
   }
 
@@ -220,17 +210,12 @@ namespace taren_profiler
 
   bool End(std::ostream& o_outStream)
   {
-    if (!g_pData)
+    std::lock_guard<std::mutex> lock(g_pData.m_access);
+    if (!g_pData.m_enabled)
     {
       return false;
     }
-
-    std::lock_guard<std::mutex> lock(g_pData->m_access);
-    if (!g_pData->m_enabled)
-    {
-      return false;
-    }
-    g_pData->m_enabled = false;
+    g_pData.m_enabled = false;
 
     // Init this thread as the primary thread
     std::unordered_map<std::thread::id, Tags> threadStack;
@@ -241,7 +226,7 @@ namespace taren_profiler
 
     std::string cleanTag;
     o_outStream << "{\"traceEvents\":[\n";
-    for (const ProfileRecord& entry : g_pData->m_records)
+    for (const ProfileRecord& entry : g_pData.m_records)
     {
       auto& stack = threadStack[entry.m_threadID];
 
@@ -283,7 +268,7 @@ namespace taren_profiler
       }
 
       // Get the microsecond count
-      long long msCount = std::chrono::duration_cast<std::chrono::microseconds>(entry.m_time - g_pData->m_startTime).count();
+      long long msCount = std::chrono::duration_cast<std::chrono::microseconds>(entry.m_time - g_pData.m_startTime).count();
 
       if (!first)
       {
