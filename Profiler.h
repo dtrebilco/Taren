@@ -73,9 +73,8 @@ namespace taren_profiler
   bool IsProfiling();
 
   /// \brief Start profiling recording
-  /// \param i_bufferSize How large the buffer size for recording should be (excess is discarded)
   /// \return Returns true if profiling was started
-  bool Begin(size_t i_bufferSize = 10000000);
+  bool Begin();
   
   /// \brief Ends the profiling
   /// \param o_outStream The stream to write the json to
@@ -112,6 +111,14 @@ namespace taren_profiler
 }
 
 #ifdef TAREN_PROFILER_IMPLEMENTATION
+
+#ifndef TAREN_PROFILER_TAG_COUNT 
+#define TAREN_PROFILER_TAG_COUNT 10000000
+#endif //!TAREN_PROFILER_TAG_COUNT
+
+#ifndef TAREN_PROFILER_TAG_NAME_BUFFER_SIZE
+#define TAREN_PROFILER_TAG_NAME_BUFFER_SIZE 1000000
+#endif //!TAREN_PROFILER_TAG_NAME_BUFFER_SIZE
 
 #include <memory>
 #include <chrono>
@@ -151,14 +158,14 @@ namespace taren_profiler
     std::atomic_bool m_enabled = false;   // If profiling is enabled
     std::mutex m_access;                  // Access mutex for changing data
 
-    size_t m_maxRecords = 0;              // The maximum number of records
-    std::vector<ProfileRecord> m_records; // The profiling records
+    size_t m_recordCount = 0;              // The current record count
+    ProfileRecord m_records[TAREN_PROFILER_TAG_COUNT]; // The profiling records
   };
-  static ProfileData g_pData; // The global profile data
+  static ProfileData g_data; // The global profile data
 
   void ProfileTagBegin(const char* i_str)
   {
-    if (!g_pData.m_enabled)
+    if (!g_data.m_enabled)
     {
       return;
     }
@@ -175,19 +182,20 @@ namespace taren_profiler
     newData.m_tag = i_str;
 
     // There is a race condition where a record could be added after the profiling has ended (m_enabled changed)- this is benign however
-    std::lock_guard<std::mutex> lock(g_pData.m_access);
-    if (g_pData.m_records.size() < g_pData.m_maxRecords)
+    std::lock_guard<std::mutex> lock(g_data.m_access);
+    if (g_data.m_recordCount < TAREN_PROFILER_TAG_COUNT)
     {
-      g_pData.m_records.push_back(newData);
-
       // Assign the time as the last possible thing
-      g_pData.m_records.back().m_time = clock::now();
+      newData.m_time = clock::now();
+
+      g_data.m_records[g_data.m_recordCount] = newData;
+      g_data.m_recordCount++;
     }
   }
 
   void ProfileTagEnd()
   {
-    if (!g_pData.m_enabled)
+    if (!g_data.m_enabled)
     {
       return;
     }
@@ -198,33 +206,32 @@ namespace taren_profiler
     newData.m_tag = nullptr;
 
     // There is a race condition where a record could be added after the profiling has ended (m_enabled changed)- this is benign however
-    std::lock_guard<std::mutex> lock(g_pData.m_access);
-    if (g_pData.m_records.size() < g_pData.m_maxRecords)
+    std::lock_guard<std::mutex> lock(g_data.m_access);
+    if (g_data.m_recordCount < TAREN_PROFILER_TAG_COUNT)
     {
-      g_pData.m_records.push_back(newData);
+      g_data.m_records[g_data.m_recordCount] = newData;
+      g_data.m_recordCount++;
     }
   }
 
   bool IsProfiling()
   {
-    return g_pData.m_enabled;
+    return g_data.m_enabled;
   }
 
-  bool Begin(size_t i_bufferSize)
+  bool Begin()
   {
-    std::lock_guard<std::mutex> lock(g_pData.m_access);
-    if (g_pData.m_enabled)
+    std::lock_guard<std::mutex> lock(g_data.m_access);
+    if (g_data.m_enabled)
     {
       return false;
     }
 
     // Clear all data (may have been some extra in buffers from previous enable)
-    g_pData.m_maxRecords = i_bufferSize / sizeof(ProfileRecord);
-    g_pData.m_records.resize(0);
-    g_pData.m_records.reserve(g_pData.m_maxRecords);
-    g_pData.m_startTime = clock::now();
+    g_data.m_recordCount = 0;
+    g_data.m_startTime = clock::now();
 
-    g_pData.m_enabled = true;
+    g_data.m_enabled = true;
     return true;
   }
 
@@ -240,12 +247,12 @@ namespace taren_profiler
 
   bool End(std::ostream& o_outStream)
   {
-    std::lock_guard<std::mutex> lock(g_pData.m_access);
-    if (!g_pData.m_enabled)
+    std::lock_guard<std::mutex> lock(g_data.m_access);
+    if (!g_data.m_enabled)
     {
       return false;
     }
-    g_pData.m_enabled = false;
+    g_data.m_enabled = false;
 
     // Init this thread as the primary thread
     std::unordered_map<std::thread::id, Tags> threadStack;
@@ -256,8 +263,12 @@ namespace taren_profiler
 
     std::string cleanTag;
     o_outStream << "{\"traceEvents\":[\n";
-    for (const ProfileRecord& entry : g_pData.m_records)
+
+    size_t recordCount = g_data.m_recordCount; // Save off count in case any other threads are still running
+    for (size_t i = 0; i < recordCount; i++)
     {
+      const ProfileRecord& entry = g_data.m_records[i];
+
       auto& stack = threadStack[entry.m_threadID];
 
       // Assign a unique index to each thread
@@ -298,7 +309,7 @@ namespace taren_profiler
       }
 
       // Get the microsecond count
-      long long msCount = std::chrono::duration_cast<std::chrono::microseconds>(entry.m_time - g_pData.m_startTime).count();
+      long long msCount = std::chrono::duration_cast<std::chrono::microseconds>(entry.m_time - g_data.m_startTime).count();
 
       if (!first)
       {
