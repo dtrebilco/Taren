@@ -185,19 +185,15 @@ namespace taren_profiler
       return;
     }
 
-    // Create the profile record
-    ProfileRecord newData = {};
-    newData.m_type = TagType::Begin;
-    newData.m_threadID = std::this_thread::get_id();
-    newData.m_tag = i_str;
-
     // There is a race condition where a record could be added after the profiling has ended (m_enabled changed)- this is benign however
     uint32_t recordIndex = g_data.m_recordCount.fetch_add(1);
     if (recordIndex < TAREN_PROFILER_TAG_COUNT)
     {
-      // Assign the time as the last possible thing
-      newData.m_time = clock::now();
-      g_data.m_records[recordIndex] = newData;
+      ProfileRecord& newData = g_data.m_records[recordIndex];
+      newData.m_type = TagType::Begin;
+      newData.m_threadID = std::this_thread::get_id();
+      newData.m_tag = i_str;
+      newData.m_time = clock::now();  // Assign the time as the last possible thing
     }
     else
     {
@@ -212,17 +208,14 @@ namespace taren_profiler
       return;
     }
 
-    ProfileRecord newData = {};
-    newData.m_type = TagType::End;
-    newData.m_time = clock::now(); // Always get time as soon as possible
-    newData.m_threadID = std::this_thread::get_id();
-    newData.m_tag = nullptr;
-
     // There is a race condition where a record could be added after the profiling has ended (m_enabled changed)- this is benign however
     uint32_t recordIndex = g_data.m_recordCount.fetch_add(1);
     if (recordIndex < TAREN_PROFILER_TAG_COUNT)
     {
-      g_data.m_records[recordIndex] = newData;
+      ProfileRecord& newData = g_data.m_records[recordIndex];
+      newData.m_time = clock::now(); // Always get time as soon as possible
+      newData.m_type = TagType::End;
+      newData.m_threadID = std::this_thread::get_id();
     }
     else
     {
@@ -237,20 +230,16 @@ namespace taren_profiler
       return;
     }
 
-    // Create the profile record
-    ProfileRecord newData = {};
-    newData.m_type = TagType::Value;
-    newData.m_threadID = std::this_thread::get_id();
-    newData.m_tag = i_str;
-    newData.m_value = i_value;
-
     // There is a race condition where a record could be added after the profiling has ended (m_enabled changed)- this is benign however
     uint32_t recordIndex = g_data.m_recordCount.fetch_add(1);
     if (recordIndex < TAREN_PROFILER_TAG_COUNT)
     {
-      // Assign the time as the last possible thing
-      newData.m_time = clock::now();
-      g_data.m_records[recordIndex] = newData;
+      ProfileRecord& newData = g_data.m_records[recordIndex];
+      newData.m_type = TagType::Value;
+      newData.m_threadID = std::this_thread::get_id();
+      newData.m_tag = i_str;
+      newData.m_value = i_value;
+      newData.m_time = clock::now(); // Assign the time as the last possible thing
     }
     else
     {
