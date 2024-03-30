@@ -21,19 +21,43 @@
 /// 
 #pragma once
 
+// TODO:
+//  - Add defines to start and end profiling?
+//  - Allow tags to exceed limit? 
+//  - Have a buffer of chars to allow custom formatting - falls back to "CustomTag"
+//  - Have single memory alloc tag
+
 #ifdef TAREN_PROFILE_ENABLE
 
-#define PROFILE_BEGIN(x) static_assert(x[0] != 0, "Only static strings"); taren_profiler::ProfileTagBegin(x)
-#define PROFILE_END() taren_profiler::ProfileTagEnd()
+#define PROFILE_BEGIN(...) taren_profiler::Begin(__VA_ARGS__)
+#define PROFILE_END(...) taren_profiler::End(__VA_ARGS__)
+#define PROFILE_ENDFILEJSON(...) taren_profiler::EndFileJson(__VA_ARGS__)
+
+#define PROFILE_TAG_BEGIN(x) static_assert(x[0] != 0, "Only literal strings - Use PROFILE_TAGCOPY_BEGIN"); taren_profiler::ProfileTagBegin(x)
+#define PROFILE_TAG_COPY_BEGIN(x) taren_profiler::ProfileTagBegin(taren_profiler::CopyTag(x))
+#define PROFILE_TAG_FORMAT_BEGIN(...) taren_profiler::ProfileTagBegin(taren_profiler::FormatTag(__VA_ARGS__))
+#define PROFILE_TAG_END() taren_profiler::ProfileTagEnd()
 #define PROFILE_SCOPE_INTERNAL2(X,Y) X ## Y
 #define PROFILE_SCOPE_INTERNAL(a,b) PROFILE_SCOPE_INTERNAL2(a,b)
-#define PROFILE_SCOPE(x) static_assert(x[0] != 0, "Only static strings"); taren_profiler::ProfileScope PROFILE_SCOPE_INTERNAL(p,__LINE__) (x)
+#define PROFILE_SCOPE(x) static_assert(x[0] != 0, "Only literal strings - Use PROFILE_SCOPECOPY"); taren_profiler::ProfileScope PROFILE_SCOPE_INTERNAL(taren_profile_scope,__LINE__) (x)
+#define PROFILE_SCOPE_COPY(x) taren_profiler::ProfileScope PROFILE_SCOPE_INTERNAL(taren_profile_scope,__LINE__) (taren_profiler::CopyTag(x))
+#define PROFILE_SCOPE_FORMAT(...) taren_profiler::ProfileScope PROFILE_SCOPE_INTERNAL(taren_profile_scope,__LINE__) (taren_profiler::FormatTag(__VA_ARGS__))
+
+// https://en.cppreference.com/w/cpp/utility/format/format_to_n
 
 #else // !TAREN_PROFILE_ENABLE
 
-#define PROFILE_BEGIN(x)
-#define PROFILE_END()
-#define PROFILE_SCOPE(x)
+#define PROFILE_BEGIN(...)
+#define PROFILE_END(...)
+#define PROFILE_ENDFILEJSON(...)
+
+#define PROFILE_TAG_BEGIN(...)
+#define PROFILE_TAG_BEGIN_COPY(...)
+#define PROFILE_TAG_BEGIN_FORMAT(...)
+#define PROFILE_TAG_END()
+#define PROFILE_SCOPE(...)
+#define PROFILE_SCOPE_COPY(...)
+#define PROFILE_SCOPE_FORMAT(...)
 
 #endif // !TAREN_PROFILE_ENABLE
 
@@ -67,7 +91,7 @@ namespace taren_profiler
   bool EndFileJson(const char* i_fileName, bool i_appendDate = true);
 
   /// \brief Starts a profile tag
-  /// \param i_str The tag name, must be a static string
+  /// \param i_str The tag name, must be a literal string or safe copy
   void ProfileTagBegin(const char* i_str);
 
   /// \brief End a profile tag
@@ -75,6 +99,12 @@ namespace taren_profiler
 
   struct ProfileScope
   {
+    //template<size_t N>
+    //ProfileScope(const char(&i_str)[N]) { ProfileTagBegin(i_str); }
+
+    //template <char... chars>
+    //ProfileScope() { ProfileTagBegin(chars); }
+
     ProfileScope(const char* i_str) { ProfileTagBegin(i_str); }
     ~ProfileScope() { ProfileTagEnd(); }
   };
