@@ -33,15 +33,19 @@
 #define PROFILE_END(...) taren_profiler::End(__VA_ARGS__)
 #define PROFILE_ENDFILEJSON(...) taren_profiler::EndFileJson(__VA_ARGS__)
 
-#define PROFILE_TAG_BEGIN(x) static_assert(x[0] != 0, "Only literal strings - Use PROFILE_TAGCOPY_BEGIN"); taren_profiler::ProfileTagBegin(x)
-#define PROFILE_TAG_COPY_BEGIN(x) taren_profiler::ProfileTagBegin(taren_profiler::CopyTag(x))
+#define PROFILE_TAG_BEGIN(str) static_assert(str[0] != 0, "Only literal strings - Use PROFILE_TAGCOPY_BEGIN"); taren_profiler::ProfileTagBegin(str)
+#define PROFILE_TAG_COPY_BEGIN(str) taren_profiler::ProfileTagBegin(taren_profiler::CopyTag(str))
 #define PROFILE_TAG_FORMAT_BEGIN(...) taren_profiler::ProfileTagBegin(taren_profiler::FormatTag(__VA_ARGS__))
 #define PROFILE_TAG_END() taren_profiler::ProfileTagEnd()
+
 #define PROFILE_SCOPE_INTERNAL2(X,Y) X ## Y
 #define PROFILE_SCOPE_INTERNAL(a,b) PROFILE_SCOPE_INTERNAL2(a,b)
-#define PROFILE_SCOPE(x) static_assert(x[0] != 0, "Only literal strings - Use PROFILE_SCOPECOPY"); taren_profiler::ProfileScope PROFILE_SCOPE_INTERNAL(taren_profile_scope,__LINE__) (x)
-#define PROFILE_SCOPE_COPY(x) taren_profiler::ProfileScope PROFILE_SCOPE_INTERNAL(taren_profile_scope,__LINE__) (taren_profiler::CopyTag(x))
+#define PROFILE_SCOPE(str) static_assert(str[0] != 0, "Only literal strings - Use PROFILE_SCOPECOPY"); taren_profiler::ProfileScope PROFILE_SCOPE_INTERNAL(taren_profile_scope,__LINE__) (str)
+#define PROFILE_SCOPE_COPY(str) taren_profiler::ProfileScope PROFILE_SCOPE_INTERNAL(taren_profile_scope,__LINE__) (taren_profiler::CopyTag(str))
 #define PROFILE_SCOPE_FORMAT(...) taren_profiler::ProfileScope PROFILE_SCOPE_INTERNAL(taren_profile_scope,__LINE__) (taren_profiler::FormatTag(__VA_ARGS__))
+
+#define PROFILE_TAG_VALUE(str, value) static_assert(str[0] != 0, "Only literal strings - Use PROFILE_TAG_VALUE_COPY"); taren_profiler::ProfileTagValue(str, value)
+#define PROFILE_TAG_VALUE_COPY(str, value) taren_profiler::ProfileTagValue(taren_profiler::CopyTag(str), value)
 
 // https://en.cppreference.com/w/cpp/utility/format/format_to_n
 
@@ -55,9 +59,13 @@
 #define PROFILE_TAG_BEGIN_COPY(...)
 #define PROFILE_TAG_BEGIN_FORMAT(...)
 #define PROFILE_TAG_END()
+
 #define PROFILE_SCOPE(...)
 #define PROFILE_SCOPE_COPY(...)
 #define PROFILE_SCOPE_FORMAT(...)
+
+#define PROFILE_TAG_VALUE(...)
+#define PROFILE_TAG_VALUE_COPY(...)
 
 #endif // !TAREN_PROFILE_ENABLE
 
@@ -96,14 +104,13 @@ namespace taren_profiler
   /// \brief End a profile tag
   void ProfileTagEnd();
 
+  /// \brief Sets a profile tag and value at the current time
+  /// \param i_str The tag name, must be a literal string or safe copy
+  /// \param i_value The value to supply with the tag
+  void ProfileTagValue(const char* i_str, int32_t i_value);
+
   struct ProfileScope
   {
-    //template<size_t N>
-    //ProfileScope(const char(&i_str)[N]) { ProfileTagBegin(i_str); }
-
-    //template <char... chars>
-    //ProfileScope() { ProfileTagBegin(chars); }
-
     ProfileScope(const char* i_str) { ProfileTagBegin(i_str); }
     ~ProfileScope() { ProfileTagEnd(); }
   };
@@ -138,11 +145,21 @@ namespace taren_profiler
 {
   using clock = std::chrono::high_resolution_clock;
 
+  enum class TagType
+  {
+    Begin,
+    End,
+    Value,
+  };
+
   struct ProfileRecord
   {
     clock::time_point m_time;    // The time of the profile data
-    std::thread::id m_threadID;  // The id of the thread
     const char* m_tag = nullptr; // The tag used in profiling - if empty is an end event
+    std::thread::id m_threadID;  // The id of the thread
+
+    TagType m_type;              // The tag type
+    int32_t m_value;             // Misc value used with the tag
   };
 
   struct Tags
@@ -155,10 +172,8 @@ namespace taren_profiler
   {
     clock::time_point m_startTime;        // The start time of the profile
 
-    std::atomic_bool m_enabled = false;   // If profiling is enabled
-    std::mutex m_access;                  // Access mutex for changing data
-
-    size_t m_recordCount = 0;              // The current record count
+    std::atomic_bool m_enabled = false;                // If profiling is enabled
+    std::atomic_uint32_t m_recordCount = 0;            // The current record count
     ProfileRecord m_records[TAREN_PROFILER_TAG_COUNT]; // The profiling records
   };
   static ProfileData g_data; // The global profile data
@@ -170,26 +185,23 @@ namespace taren_profiler
       return;
     }
 
-    // Ensure no null pointers on begin
-    if (i_str == nullptr)
-    {
-      i_str = "Unknown";
-    }
-
     // Create the profile record
     ProfileRecord newData = {};
+    newData.m_type = TagType::Begin;
     newData.m_threadID = std::this_thread::get_id();
     newData.m_tag = i_str;
 
     // There is a race condition where a record could be added after the profiling has ended (m_enabled changed)- this is benign however
-    std::lock_guard<std::mutex> lock(g_data.m_access);
-    if (g_data.m_recordCount < TAREN_PROFILER_TAG_COUNT)
+    uint32_t recordIndex = g_data.m_recordCount.fetch_add(1);
+    if (recordIndex < TAREN_PROFILER_TAG_COUNT)
     {
       // Assign the time as the last possible thing
       newData.m_time = clock::now();
-
-      g_data.m_records[g_data.m_recordCount] = newData;
-      g_data.m_recordCount++;
+      g_data.m_records[recordIndex] = newData;
+    }
+    else
+    {
+      g_data.m_recordCount--; // Only hit if exceeded the record count, reverse the add
     }
   }
 
@@ -201,16 +213,48 @@ namespace taren_profiler
     }
 
     ProfileRecord newData = {};
+    newData.m_type = TagType::End;
     newData.m_time = clock::now(); // Always get time as soon as possible
     newData.m_threadID = std::this_thread::get_id();
     newData.m_tag = nullptr;
 
     // There is a race condition where a record could be added after the profiling has ended (m_enabled changed)- this is benign however
-    std::lock_guard<std::mutex> lock(g_data.m_access);
-    if (g_data.m_recordCount < TAREN_PROFILER_TAG_COUNT)
+    uint32_t recordIndex = g_data.m_recordCount.fetch_add(1);
+    if (recordIndex < TAREN_PROFILER_TAG_COUNT)
     {
-      g_data.m_records[g_data.m_recordCount] = newData;
-      g_data.m_recordCount++;
+      g_data.m_records[recordIndex] = newData;
+    }
+    else
+    {
+      g_data.m_recordCount--; // Only hit if exceeded the record count, reverse the add
+    }
+  }
+
+  void ProfileTagValue(const char* i_str, int32_t i_value)
+  {
+    if (!g_data.m_enabled)
+    {
+      return;
+    }
+
+    // Create the profile record
+    ProfileRecord newData = {};
+    newData.m_type = TagType::Value;
+    newData.m_threadID = std::this_thread::get_id();
+    newData.m_tag = i_str;
+    newData.m_value = i_value;
+
+    // There is a race condition where a record could be added after the profiling has ended (m_enabled changed)- this is benign however
+    uint32_t recordIndex = g_data.m_recordCount.fetch_add(1);
+    if (recordIndex < TAREN_PROFILER_TAG_COUNT)
+    {
+      // Assign the time as the last possible thing
+      newData.m_time = clock::now();
+      g_data.m_records[recordIndex] = newData;
+    }
+    else
+    {
+      g_data.m_recordCount--; // Only hit if exceeded the record count, reverse the add
     }
   }
 
@@ -221,7 +265,6 @@ namespace taren_profiler
 
   bool Begin()
   {
-    std::lock_guard<std::mutex> lock(g_data.m_access);
     if (g_data.m_enabled)
     {
       return false;
@@ -230,7 +273,6 @@ namespace taren_profiler
     // Clear all data (may have been some extra in buffers from previous enable)
     g_data.m_recordCount = 0;
     g_data.m_startTime = clock::now();
-
     g_data.m_enabled = true;
     return true;
   }
@@ -247,7 +289,6 @@ namespace taren_profiler
 
   bool End(std::ostream& o_outStream)
   {
-    std::lock_guard<std::mutex> lock(g_data.m_access);
     if (!g_data.m_enabled)
     {
       return false;
@@ -258,13 +299,17 @@ namespace taren_profiler
     std::unordered_map<std::thread::id, Tags> threadStack;
     threadStack[std::this_thread::get_id()].m_index = 0;
 
-    bool first = true;
     int32_t threadCounter = 1;
 
     std::string cleanTag;
     o_outStream << "{\"traceEvents\":[\n";
 
-    size_t recordCount = g_data.m_recordCount; // Save off count in case any other threads are still running
+    // Save off count in case any other threads are still running
+    size_t recordCount = g_data.m_recordCount;
+    if (recordCount > TAREN_PROFILER_TAG_COUNT)
+    {
+      recordCount = TAREN_PROFILER_TAG_COUNT;
+    }
     for (size_t i = 0; i < recordCount; i++)
     {
       const ProfileRecord& entry = g_data.m_records[i];
@@ -281,11 +326,11 @@ namespace taren_profiler
       // Get the name tags
       const char* tag = entry.m_tag;
       const char* typeTag = "B";
-      if (tag != nullptr)
+      if (entry.m_type == TagType::Begin)
       {
         stack.m_tags.push_back(tag);
       }
-      else
+      else if (entry.m_type == TagType::End)
       {
         typeTag = "E";
         if (stack.m_tags.size() == 0)
@@ -298,10 +343,14 @@ namespace taren_profiler
           stack.m_tags.pop_back();
         }
       }
+      else if (entry.m_type == TagType::Value)
+      {
+        typeTag = "O";
+      }
 
       // Markup invalid json characters
       if (strchr(tag, '"') != nullptr ||
-        strchr(tag, '\\') != nullptr)
+          strchr(tag, '\\') != nullptr)
       {
         cleanTag = tag;
         CleanJsonStr(cleanTag);
@@ -311,35 +360,30 @@ namespace taren_profiler
       // Get the microsecond count
       long long msCount = std::chrono::duration_cast<std::chrono::microseconds>(entry.m_time - g_data.m_startTime).count();
 
-      if (!first)
+      if (i != 0)
       {
         o_outStream << ",\n";
       }
-      first = false;
-
-      char msString[64];
-      snprintf(msString, sizeof(msString), "%lld", msCount);
-
-      char indexString[64];
-      snprintf(indexString, sizeof(indexString), "%d", stack.m_index);
 
       // Format the string
       o_outStream <<
-        "{\"name\":\"" << tag <<
-        "\",\"ph\":\"" << typeTag <<
-        "\",\"ts\":" << msString <<
-        ",\"tid\":" << indexString <<
-        ",\"cat\":\"\",\"pid\":0,\"args\":{}}";
+        "{\"name\":\"" << tag << "\",\"ph\":\"" << typeTag << "\",\"ts\":" << msCount << ",\"tid\":" << stack.m_index << ",\"cat\":\"\",\"pid\":0,";
+        
+      if (entry.m_type == TagType::Value)
+      {
+        o_outStream << "\"id\":\"" << tag << "\", \"args\":{\"snapshot\":{\"Value\": " << entry.m_value << "}}}";
+      }
+      else
+      {
+        o_outStream << "\"args\":{}}";
+      }
     }
 
     // Write thread "names"
-    if (!first)
+    if (recordCount > 0)
     {
       for (auto& t : threadStack)
       {
-        char indexString[64];
-        snprintf(indexString, sizeof(indexString), "%d", t.second.m_index);
-
         // Sort thread listing by the time that they appear in the profile (tool sorts by name)
         char indexSpaceString[64];
         snprintf(indexSpaceString, sizeof(indexSpaceString), "%02d", t.second.m_index);
@@ -351,7 +395,7 @@ namespace taren_profiler
         CleanJsonStr(threadName);
 
         o_outStream <<
-          ",\n{\"name\":\"thread_name\",\"ph\":\"M\",\"pid\":0,\"tid\":" << indexString <<
+          ",\n{\"name\":\"thread_name\",\"ph\":\"M\",\"pid\":0,\"tid\":" << t.second.m_index <<
           ",\"args\":{\"name\":\"Thread" << indexSpaceString << "_" << threadName << "\"}}";
       }
     }
