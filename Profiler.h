@@ -354,9 +354,9 @@ namespace taren_profiler
         o_outStream << ",\n";
       }
 
-      // Format the string
+      // Format the string (Note using process ID for threads as that gives a better formatting in the output tool for value tags)
       o_outStream <<
-        "{\"name\":\"" << tag << "\",\"ph\":\"" << typeTag << "\",\"ts\":" << msCount << ",\"tid\":" << stack.m_index << ",\"cat\":\"\",\"pid\":0,";
+        "{\"name\":\"" << tag << "\",\"ph\":\"" << typeTag << "\",\"ts\":" << msCount << ",\"pid\":" << stack.m_index << ",\"cat\":\"\",\"tid\":0,";
         
       if (entry.m_type == TagType::Value)
       {
@@ -383,8 +383,8 @@ namespace taren_profiler
         std::string threadName = ss.str();
         CleanJsonStr(threadName);
 
-        o_outStream <<
-          ",\n{\"name\":\"thread_name\",\"ph\":\"M\",\"pid\":0,\"tid\":" << t.second.m_index <<
+        o_outStream << // (Note using process ID for threads as that gives a better formatting in the output tool for value tags)
+          ",\n{\"name\":\"thread_name\",\"ph\":\"M\",\"tid\":0,\"pid\":" << t.second.m_index <<
           ",\"args\":{\"name\":\"Thread" << indexSpaceString << "_" << threadName << "\"}}";
       }
     }
