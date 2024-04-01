@@ -121,8 +121,8 @@ namespace taren_profiler
 
 #ifdef TAREN_PROFILER_IMPLEMENTATION
 
-#ifndef TAREN_PROFILER_TAG_COUNT 
-#define TAREN_PROFILER_TAG_COUNT 10000000
+#ifndef TAREN_PROFILER_TAG_MAX_COUNT 
+#define TAREN_PROFILER_TAG_MAX_COUNT 10000000
 #endif //!TAREN_PROFILER_TAG_COUNT
 
 #ifndef TAREN_PROFILER_TAG_NAME_BUFFER_SIZE
@@ -169,7 +169,7 @@ namespace taren_profiler
     std::atomic_bool m_enabled = false;                // If profiling is enabled
     std::atomic_uint32_t m_slotCount = 0;              // The current slot counter
     std::atomic_uint32_t m_recordCount = 0;            // The current record count
-    ProfileRecord m_records[TAREN_PROFILER_TAG_COUNT]; // The profiling records
+    ProfileRecord m_records[TAREN_PROFILER_TAG_MAX_COUNT]; // The profiling records
   };
   static ProfileData g_data; // The global profile data
 
@@ -182,7 +182,7 @@ namespace taren_profiler
 
     // Get the slot to put the record
     uint32_t recordIndex = g_data.m_slotCount.fetch_add(1);
-    if (recordIndex < TAREN_PROFILER_TAG_COUNT)
+    if (recordIndex < TAREN_PROFILER_TAG_MAX_COUNT)
     {
       ProfileRecord& newData = g_data.m_records[recordIndex];
       newData.m_type = i_type;
@@ -251,13 +251,13 @@ namespace taren_profiler
     do
     {
       // Check if already at the limit (can exceed the limit for a short duration)
-      if (slotCount >= TAREN_PROFILER_TAG_COUNT)
+      if (slotCount >= TAREN_PROFILER_TAG_MAX_COUNT)
       {
-        slotCount = TAREN_PROFILER_TAG_COUNT;
+        slotCount = TAREN_PROFILER_TAG_MAX_COUNT;
         break;
       }
 
-    } while (!g_data.m_slotCount.compare_exchange_weak(slotCount, (uint32_t)TAREN_PROFILER_TAG_COUNT));
+    } while (!g_data.m_slotCount.compare_exchange_weak(slotCount, (uint32_t)TAREN_PROFILER_TAG_MAX_COUNT));
 
     // Wait for all threads to finish writing tags
     uint32_t recordCount = g_data.m_recordCount;
