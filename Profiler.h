@@ -26,6 +26,9 @@
 //  - Allow tags to exceed limit? 
 //  - Have a buffer of chars to allow custom formatting - falls back to "CustomTag"
 //  - Have single memory alloc tag
+//  - Note on thread safety - only during profiling is thread safe, Begin/End are not thread safe - use a wrapper mutex if this is neeed
+//  - Test thread safety in End() code
+// https://en.cppreference.com/w/cpp/utility/format/format_to_n
 
 #ifdef TAREN_PROFILE_ENABLE
 
@@ -33,10 +36,10 @@
 #define PROFILE_END(...) taren_profiler::End(__VA_ARGS__)
 #define PROFILE_ENDFILEJSON(...) taren_profiler::EndFileJson(__VA_ARGS__)
 
-#define PROFILE_TAG_BEGIN(str) static_assert(str[0] != 0, "Only literal strings - Use PROFILE_TAGCOPY_BEGIN"); taren_profiler::ProfileTagBegin(str)
-#define PROFILE_TAG_COPY_BEGIN(str) taren_profiler::ProfileTagBegin(taren_profiler::CopyTag(str))
-#define PROFILE_TAG_FORMAT_BEGIN(...) taren_profiler::ProfileTagBegin(taren_profiler::FormatTag(__VA_ARGS__))
-#define PROFILE_TAG_END() taren_profiler::ProfileTagEnd()
+#define PROFILE_TAG_BEGIN(str) static_assert(str[0] != 0, "Only literal strings - Use PROFILE_TAGCOPY_BEGIN"); taren_profiler::ProfileTagBegin(taren_profiler::TagType::Begin, str)
+#define PROFILE_TAG_COPY_BEGIN(str) taren_profiler::ProfileTag(taren_profiler::TagType::Begin, taren_profiler::CopyTag(str))
+#define PROFILE_TAG_FORMAT_BEGIN(...) taren_profiler::ProfileTag(taren_profiler::TagType::Begin, taren_profiler::FormatTag(__VA_ARGS__))
+#define PROFILE_TAG_END() taren_profiler::ProfileTag(taren_profiler::TagType::End, nullptr)
 
 #define PROFILE_SCOPE_INTERNAL2(X,Y) X ## Y
 #define PROFILE_SCOPE_INTERNAL(a,b) PROFILE_SCOPE_INTERNAL2(a,b)
@@ -44,10 +47,8 @@
 #define PROFILE_SCOPE_COPY(str) taren_profiler::ProfileScope PROFILE_SCOPE_INTERNAL(taren_profile_scope,__LINE__) (taren_profiler::CopyTag(str))
 #define PROFILE_SCOPE_FORMAT(...) taren_profiler::ProfileScope PROFILE_SCOPE_INTERNAL(taren_profile_scope,__LINE__) (taren_profiler::FormatTag(__VA_ARGS__))
 
-#define PROFILE_TAG_VALUE(str, value) static_assert(str[0] != 0, "Only literal strings - Use PROFILE_TAG_VALUE_COPY"); taren_profiler::ProfileTagValue(str, value)
-#define PROFILE_TAG_VALUE_COPY(str, value) taren_profiler::ProfileTagValue(taren_profiler::CopyTag(str), value)
-
-// https://en.cppreference.com/w/cpp/utility/format/format_to_n
+#define PROFILE_TAG_VALUE(str, value) static_assert(str[0] != 0, "Only literal strings - Use PROFILE_TAG_VALUE_COPY"); taren_profiler::ProfileTag(taren_profiler::TagType::Value, str, value)
+#define PROFILE_TAG_VALUE_COPY(str, value) taren_profiler::ProfileTag(taren_profiler::TagType::Value, taren_profiler::CopyTag(str), value)
 
 #else // !TAREN_PROFILE_ENABLE
 
@@ -76,6 +77,13 @@
 
 namespace taren_profiler
 {
+  enum class TagType
+  {
+    Begin,
+    End,
+    Value,
+  };
+
   /// \brief Get if the profiler is currently running
   /// \return Returns true if profiling is current running
   bool IsProfiling();
@@ -97,22 +105,16 @@ namespace taren_profiler
   /// \return Returns true on success
   bool EndFileJson(const char* i_fileName, bool i_appendDate = true);
 
-  /// \brief Starts a profile tag
-  /// \param i_str The tag name, must be a literal string or safe copy
-  void ProfileTagBegin(const char* i_str);
-
-  /// \brief End a profile tag
-  void ProfileTagEnd();
-
-  /// \brief Sets a profile tag and value at the current time
+  /// \brief Set a profiling tag
+  /// \param i_type The type of tag
   /// \param i_str The tag name, must be a literal string or safe copy
   /// \param i_value The value to supply with the tag
-  void ProfileTagValue(const char* i_str, int32_t i_value);
+  void ProfileTag(TagType i_type, const char* i_str, int32_t i_value = 0);
 
   struct ProfileScope
   {
-    ProfileScope(const char* i_str) { ProfileTagBegin(i_str); }
-    ~ProfileScope() { ProfileTagEnd(); }
+    ProfileScope(const char* i_str) { ProfileTag(TagType::Begin, i_str); }
+    ~ProfileScope() { ProfileTag(TagType::End, nullptr); }
   };
 
 }
@@ -133,7 +135,6 @@ namespace taren_profiler
 
 #include <thread>
 #include <atomic>
-#include <mutex>
 
 #include <vector>
 #include <unordered_map>
@@ -144,13 +145,6 @@ namespace taren_profiler
 namespace taren_profiler
 {
   using clock = std::chrono::high_resolution_clock;
-
-  enum class TagType
-  {
-    Begin,
-    End,
-    Value,
-  };
 
   struct ProfileRecord
   {
@@ -173,77 +167,35 @@ namespace taren_profiler
     clock::time_point m_startTime;        // The start time of the profile
 
     std::atomic_bool m_enabled = false;                // If profiling is enabled
+    std::atomic_uint32_t m_slotCount = 0;              // The current slot counter
     std::atomic_uint32_t m_recordCount = 0;            // The current record count
     ProfileRecord m_records[TAREN_PROFILER_TAG_COUNT]; // The profiling records
   };
   static ProfileData g_data; // The global profile data
 
-  void ProfileTagBegin(const char* i_str)
+  void ProfileTag(TagType i_type, const char* i_str, int32_t i_value)
   {
     if (!g_data.m_enabled)
     {
       return;
     }
 
-    // There is a race condition where a record could be added after the profiling has ended (m_enabled changed)- this is benign however
-    uint32_t recordIndex = g_data.m_recordCount.fetch_add(1);
+    // Get the slot to put the record
+    uint32_t recordIndex = g_data.m_slotCount.fetch_add(1);
     if (recordIndex < TAREN_PROFILER_TAG_COUNT)
     {
       ProfileRecord& newData = g_data.m_records[recordIndex];
-      newData.m_type = TagType::Begin;
-      newData.m_threadID = std::this_thread::get_id();
-      newData.m_tag = i_str;
-      newData.m_time = clock::now();  // Assign the time as the last possible thing
-    }
-    else
-    {
-      g_data.m_recordCount--; // Only hit if exceeded the record count, reverse the add
-    }
-  }
-
-  void ProfileTagEnd()
-  {
-    if (!g_data.m_enabled)
-    {
-      return;
-    }
-
-    // There is a race condition where a record could be added after the profiling has ended (m_enabled changed)- this is benign however
-    uint32_t recordIndex = g_data.m_recordCount.fetch_add(1);
-    if (recordIndex < TAREN_PROFILER_TAG_COUNT)
-    {
-      ProfileRecord& newData = g_data.m_records[recordIndex];
-      newData.m_time = clock::now(); // Always get time as soon as possible
-      newData.m_type = TagType::End;
-      newData.m_threadID = std::this_thread::get_id();
-    }
-    else
-    {
-      g_data.m_recordCount--; // Only hit if exceeded the record count, reverse the add
-    }
-  }
-
-  void ProfileTagValue(const char* i_str, int32_t i_value)
-  {
-    if (!g_data.m_enabled)
-    {
-      return;
-    }
-
-    // There is a race condition where a record could be added after the profiling has ended (m_enabled changed)- this is benign however
-    uint32_t recordIndex = g_data.m_recordCount.fetch_add(1);
-    if (recordIndex < TAREN_PROFILER_TAG_COUNT)
-    {
-      ProfileRecord& newData = g_data.m_records[recordIndex];
-      newData.m_type = TagType::Value;
+      newData.m_type = i_type;
       newData.m_threadID = std::this_thread::get_id();
       newData.m_tag = i_str;
       newData.m_value = i_value;
-      newData.m_time = clock::now(); // Assign the time as the last possible thing
+      newData.m_time = clock::now();  // Assign the time as the last possible thing
+
+      g_data.m_recordCount++; // Flag that the record is complete
     }
     else
     {
-      g_data.m_recordCount--; // Only hit if exceeded the record count, reverse the add
+      g_data.m_slotCount--; // Only hit if exceeded the record count or end of profiling, reverse the add
     }
   }
 
@@ -261,6 +213,7 @@ namespace taren_profiler
 
     // Clear all data (may have been some extra in buffers from previous enable)
     g_data.m_recordCount = 0;
+    g_data.m_slotCount = 0;
     g_data.m_startTime = clock::now();
     g_data.m_enabled = true;
     return true;
@@ -293,12 +246,27 @@ namespace taren_profiler
     std::string cleanTag;
     o_outStream << "{\"traceEvents\":[\n";
 
-    // Save off count in case any other threads are still running
-    size_t recordCount = g_data.m_recordCount;
-    if (recordCount > TAREN_PROFILER_TAG_COUNT)
+    // Flag that records should no longer be written by setting the slot count to TAREN_PROFILER_TAG_COUNT
+    uint32_t slotCount = g_data.m_slotCount;
+    do
     {
-      recordCount = TAREN_PROFILER_TAG_COUNT;
+      // Check if already at the limit (can exceed the limit for a short duration)
+      if (slotCount >= TAREN_PROFILER_TAG_COUNT)
+      {
+        slotCount = TAREN_PROFILER_TAG_COUNT;
+        break;
+      }
+
+    } while (!g_data.m_slotCount.compare_exchange_weak(slotCount, (uint32_t)TAREN_PROFILER_TAG_COUNT));
+
+    // Wait for all threads to finish writing tags
+    uint32_t recordCount = g_data.m_recordCount;
+    while (recordCount != slotCount)
+    {
+      std::this_thread::yield();
+      recordCount = g_data.m_recordCount;
     }
+
     for (size_t i = 0; i < recordCount; i++)
     {
       const ProfileRecord& entry = g_data.m_records[i];
