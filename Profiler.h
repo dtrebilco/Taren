@@ -120,9 +120,9 @@ namespace taren_profiler
 
   /// \brief Ends the profiling and writes the json results to a file
   /// \param i_fileName The file name to write to.
-  /// \param i_appendDate If true, the current date/time and the extension .json is appened to the filename before opening.
+  /// \param i_appendDateExtension If true, the current date/time and the extension .json is appened to the filename before opening.
   /// \return Returns true on success
-  bool EndFileJson(const char* i_fileName, bool i_appendDate = true);
+  bool EndFileJson(const char* i_fileName, bool i_appendDateExtension = true);
 
   /// \brief Set a profiling tag
   /// \param i_type The type of tag
@@ -417,24 +417,24 @@ namespace taren_profiler
     return retval;
   }
 
-  bool EndFileJson(const char* i_fileName, bool i_appendDate)
+  bool EndFileJson(const char* i_fileName, bool i_appendDateExtension)
   {
     std::ofstream file;
-    if (i_appendDate)
+    if (i_appendDateExtension)
     {
       // Create a filename with the current date in it
       std::time_t t = std::time(nullptr);
       tm timeBuf;
       localtime_s(&timeBuf, &t);
-      char timeStr[100];
-      if (std::strftime(timeStr, sizeof(timeStr), "%Y%m%d-%H%M%S", &timeBuf) == 0)
+      char extStr[120];
+      if (std::strftime(extStr, sizeof(extStr), "_%Y%m%d-%H%M%S.json", &timeBuf) == 0)
       {
         return false;
       }
 
       // Append date and file extension
-      char newFilename[1024];
-      std::snprintf(newFilename, sizeof(newFilename), "%s_%s.json", i_fileName, timeStr);
+      std::string newFilename = i_fileName;
+      newFilename += extStr;
       file.open(newFilename);
     }
     else
