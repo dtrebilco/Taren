@@ -32,23 +32,29 @@
 
 #ifdef TAREN_PROFILE_ENABLE
 
+#ifndef TAREN_PROFILER_FORMAT_COUNT
+#define TAREN_PROFILER_FORMAT_COUNT 30
+#endif //!TAREN_PROFILER_TAG_COUNT
+
+#define PROFILE_FORMAT(...) char buf[TAREN_PROFILER_FORMAT_COUNT]; const auto out = std::format_to_n(buf, TAREN_PROFILER_FORMAT_COUNT - 1, __VA_ARGS__); *out.out = '\0'
+
 #define PROFILE_BEGIN(...) taren_profiler::Begin(__VA_ARGS__)
 #define PROFILE_END(...) taren_profiler::End(__VA_ARGS__)
 #define PROFILE_ENDFILEJSON(...) taren_profiler::EndFileJson(__VA_ARGS__)
 
 #define PROFILE_TAG_BEGIN(str) static_assert(str[0] != 0, "Only literal strings - Use PROFILE_TAGCOPY_BEGIN"); taren_profiler::ProfileTagBegin(taren_profiler::TagType::Begin, str)
-#define PROFILE_TAG_COPY_BEGIN(str) taren_profiler::ProfileTag(taren_profiler::TagType::Begin, taren_profiler::CopyTag(str))
-#define PROFILE_TAG_FORMAT_BEGIN(...) taren_profiler::ProfileTag(taren_profiler::TagType::Begin, taren_profiler::FormatTag(__VA_ARGS__))
+#define PROFILE_TAG_COPY_BEGIN(str) taren_profiler::ProfileTag(taren_profiler::TagType::Begin, str, true)
+#define PROFILE_TAG_FORMAT_BEGIN(...) { PROFILE_FORMAT(__VA_ARGS__); taren_profiler::ProfileTag(taren_profiler::TagType::Begin, buf, true); }
 #define PROFILE_TAG_END() taren_profiler::ProfileTag(taren_profiler::TagType::End, nullptr)
 
 #define PROFILE_SCOPE_INTERNAL2(X,Y) X ## Y
 #define PROFILE_SCOPE_INTERNAL(a,b) PROFILE_SCOPE_INTERNAL2(a,b)
 #define PROFILE_SCOPE(str) static_assert(str[0] != 0, "Only literal strings - Use PROFILE_SCOPECOPY"); taren_profiler::ProfileScope PROFILE_SCOPE_INTERNAL(taren_profile_scope,__LINE__) (str)
-#define PROFILE_SCOPE_COPY(str) taren_profiler::ProfileScope PROFILE_SCOPE_INTERNAL(taren_profile_scope,__LINE__) (taren_profiler::CopyTag(str))
-#define PROFILE_SCOPE_FORMAT(...) taren_profiler::ProfileScope PROFILE_SCOPE_INTERNAL(taren_profile_scope,__LINE__) (taren_profiler::FormatTag(__VA_ARGS__))
+#define PROFILE_SCOPE_COPY(str) taren_profiler::ProfileScope PROFILE_SCOPE_INTERNAL(taren_profile_scope,__LINE__) (str, true)
+#define PROFILE_SCOPE_FORMAT(...) { PROFILE_FORMAT(__VA_ARGS__); taren_profiler::ProfileScope PROFILE_SCOPE_INTERNAL(taren_profile_scope,__LINE__) (buf, true); }
 
-#define PROFILE_TAG_VALUE(str, value) static_assert(str[0] != 0, "Only literal strings - Use PROFILE_TAG_VALUE_COPY"); taren_profiler::ProfileTag(taren_profiler::TagType::Value, str, value)
-#define PROFILE_TAG_VALUE_COPY(str, value) taren_profiler::ProfileTag(taren_profiler::TagType::Value, taren_profiler::CopyTag(str), value)
+#define PROFILE_TAG_VALUE(str, value) static_assert(str[0] != 0, "Only literal strings - Use PROFILE_TAG_VALUE_COPY"); taren_profiler::ProfileTag(taren_profiler::TagType::Value, str, false, value)
+#define PROFILE_TAG_VALUE_COPY(str, value) taren_profiler::ProfileTag(taren_profiler::TagType::Value, taren_profiler::CopyTag(str), true, value)
 
 #else // !TAREN_PROFILE_ENABLE
 
@@ -74,6 +80,10 @@
 
 #include <string>
 #include <ostream>
+
+#if (__cplusplus >= 202002L)
+#include <format>
+#endif
 
 namespace taren_profiler
 {
@@ -107,13 +117,14 @@ namespace taren_profiler
 
   /// \brief Set a profiling tag
   /// \param i_type The type of tag
-  /// \param i_str The tag name, must be a literal string or safe copy
+  /// \param i_str The tag name, must be a literal string or i_copyTag set to true
+  /// \param i_copyStr If the i_str value should be copied internally
   /// \param i_value The value to supply with the tag
-  void ProfileTag(TagType i_type, const char* i_str, int32_t i_value = 0);
+  void ProfileTag(TagType i_type, const char* i_str, bool i_copyStr = false, int32_t i_value = 0);
 
   struct ProfileScope
   {
-    ProfileScope(const char* i_str) { ProfileTag(TagType::Begin, i_str); }
+    ProfileScope(const char* i_str, bool i_copyStr = false) { ProfileTag(TagType::Begin, i_str, i_copyStr); }
     ~ProfileScope() { ProfileTag(TagType::End, nullptr); }
   };
 
@@ -170,10 +181,37 @@ namespace taren_profiler
     std::atomic_uint32_t m_slotCount = 0;              // The current slot counter
     std::atomic_uint32_t m_recordCount = 0;            // The current record count
     ProfileRecord m_records[TAREN_PROFILER_TAG_MAX_COUNT]; // The profiling records
+
+    std::atomic_uint32_t m_copyBufferSize = 0;              // The current copy buffer usage count
+    char m_copyBuffer[TAREN_PROFILER_TAG_NAME_BUFFER_SIZE]; // The buffer to store copied tag names
   };
   static ProfileData g_data; // The global profile data
 
-  void ProfileTag(TagType i_type, const char* i_str, int32_t i_value)
+  const char* CopyStr(const char* i_str)
+  {
+    if (i_str == nullptr)
+    {
+      return nullptr;
+    }
+
+    // Allocate space to copy into
+    uint32_t len = (uint32_t)strlen(i_str) + 1;
+    uint32_t startOffset = g_data.m_copyBufferSize.fetch_add(len);
+    if ((startOffset + len) <= TAREN_PROFILER_TAG_NAME_BUFFER_SIZE)
+    {
+      char* outBuffer = &g_data.m_copyBuffer[startOffset];
+      memcpy(outBuffer, i_str, len);
+      return outBuffer;
+    }
+    else
+    {
+      g_data.m_copyBufferSize -= len; // Undo the add to make room for a smaller tag
+    }
+
+    return "OutOfTagBufferSpace";
+  }
+
+  void ProfileTag(TagType i_type, const char* i_str, bool i_copyStr, int32_t i_value)
   {
     if (!g_data.m_enabled)
     {
@@ -187,7 +225,7 @@ namespace taren_profiler
       ProfileRecord& newData = g_data.m_records[recordIndex];
       newData.m_type = i_type;
       newData.m_threadID = std::this_thread::get_id();
-      newData.m_tag = i_str;
+      newData.m_tag = i_copyStr ? CopyStr(i_str) : i_str;
       newData.m_value = i_value;
       newData.m_time = clock::now();  // Assign the time as the last possible thing
 
@@ -214,6 +252,7 @@ namespace taren_profiler
     // Clear all data (may have been some extra in buffers from previous enable)
     g_data.m_recordCount = 0;
     g_data.m_slotCount = 0;
+    g_data.m_copyBufferSize = 0;
     g_data.m_startTime = clock::now();
     g_data.m_enabled = true;
     return true;
@@ -282,6 +321,10 @@ namespace taren_profiler
 
       // Get the name tags
       const char* tag = entry.m_tag;
+      if (tag == nullptr)
+      {
+        tag = "Unknown";
+      }
       const char* typeTag = "B";
       if (entry.m_type == TagType::Begin)
       {
@@ -290,11 +333,7 @@ namespace taren_profiler
       else if (entry.m_type == TagType::End)
       {
         typeTag = "E";
-        if (stack.m_tags.size() == 0)
-        {
-          tag = "Unknown";
-        }
-        else
+        if (stack.m_tags.size() > 0)
         {
           tag = stack.m_tags.back();
           stack.m_tags.pop_back();
