@@ -37,6 +37,7 @@
 #endif //!TAREN_PROFILER_TAG_COUNT
 
 #define PROFILE_FORMAT(...) char buf[TAREN_PROFILER_FORMAT_COUNT]; const auto out = std::format_to_n(buf, TAREN_PROFILER_FORMAT_COUNT - 1, __VA_ARGS__); *out.out = '\0'
+#define PROFILE_PRINTF(...) char buf[TAREN_PROFILER_FORMAT_COUNT]; std::snprintf(buf, TAREN_PROFILER_FORMAT_COUNT, __VA_ARGS__)
 
 #define PROFILE_BEGIN(...) taren_profiler::Begin(__VA_ARGS__)
 #define PROFILE_END(...) taren_profiler::End(__VA_ARGS__)
@@ -44,17 +45,21 @@
 
 #define PROFILE_TAG_BEGIN(str) static_assert(str[0] != 0, "Only literal strings - Use PROFILE_TAGCOPY_BEGIN"); taren_profiler::ProfileTagBegin(taren_profiler::TagType::Begin, str)
 #define PROFILE_TAG_COPY_BEGIN(str) taren_profiler::ProfileTag(taren_profiler::TagType::Begin, str, true)
-#define PROFILE_TAG_FORMAT_BEGIN(...) { PROFILE_FORMAT(__VA_ARGS__); taren_profiler::ProfileTag(taren_profiler::TagType::Begin, buf, true); }
+#define PROFILE_TAG_FORMAT_BEGIN(...) if(taren_profiler::IsProfiling()) { PROFILE_FORMAT(__VA_ARGS__); taren_profiler::ProfileTag(taren_profiler::TagType::Begin, buf, true); }
+#define PROFILE_TAG_PRINTF_BEGIN(...) if(taren_profiler::IsProfiling()) { PROFILE_PRINTF(__VA_ARGS__); taren_profiler::ProfileTag(taren_profiler::TagType::Begin, buf, true); }
 #define PROFILE_TAG_END() taren_profiler::ProfileTag(taren_profiler::TagType::End, nullptr)
 
 #define PROFILE_SCOPE_INTERNAL2(X,Y) X ## Y
 #define PROFILE_SCOPE_INTERNAL(a,b) PROFILE_SCOPE_INTERNAL2(a,b)
 #define PROFILE_SCOPE(str) static_assert(str[0] != 0, "Only literal strings - Use PROFILE_SCOPECOPY"); taren_profiler::ProfileScope PROFILE_SCOPE_INTERNAL(taren_profile_scope,__LINE__) (str)
 #define PROFILE_SCOPE_COPY(str) taren_profiler::ProfileScope PROFILE_SCOPE_INTERNAL(taren_profile_scope,__LINE__) (str, true)
-#define PROFILE_SCOPE_FORMAT(...) { PROFILE_FORMAT(__VA_ARGS__); taren_profiler::ProfileScope PROFILE_SCOPE_INTERNAL(taren_profile_scope,__LINE__) (buf, true); }
+#define PROFILE_SCOPE_FORMAT(...) if(taren_profiler::IsProfiling()) { PROFILE_FORMAT(__VA_ARGS__); taren_profiler::ProfileScope PROFILE_SCOPE_INTERNAL(taren_profile_scope,__LINE__) (buf, true); }
+#define PROFILE_SCOPE_PRINTF(...) if(taren_profiler::IsProfiling()) { PROFILE_PRINTF(__VA_ARGS__); taren_profiler::ProfileScope PROFILE_SCOPE_INTERNAL(taren_profile_scope,__LINE__) (buf, true); }
 
 #define PROFILE_TAG_VALUE(str, value) static_assert(str[0] != 0, "Only literal strings - Use PROFILE_TAG_VALUE_COPY"); taren_profiler::ProfileTag(taren_profiler::TagType::Value, str, false, value)
-#define PROFILE_TAG_VALUE_COPY(str, value) taren_profiler::ProfileTag(taren_profiler::TagType::Value, taren_profiler::CopyTag(str), true, value)
+#define PROFILE_TAG_VALUE_COPY(str, value) taren_profiler::ProfileTag(taren_profiler::TagType::Value, str, true, value)
+#define PROFILE_TAG_VALUE_FORMAT(...) if(taren_profiler::IsProfiling()) { PROFILE_FORMAT(__VA_ARGS__); taren_profiler::ProfileTag(taren_profiler::TagType::Value, str, true, value); }
+#define PROFILE_TAG_VALUE_PRINTF(...) if(taren_profiler::IsProfiling()) { PROFILE_PRINTF(__VA_ARGS__); taren_profiler::ProfileTag(taren_profiler::TagType::Value, str, true, value); }
 
 #else // !TAREN_PROFILE_ENABLE
 
@@ -65,14 +70,18 @@
 #define PROFILE_TAG_BEGIN(...)
 #define PROFILE_TAG_BEGIN_COPY(...)
 #define PROFILE_TAG_BEGIN_FORMAT(...)
+#define PROFILE_TAG_BEGIN_PRINTF(...)
 #define PROFILE_TAG_END()
 
 #define PROFILE_SCOPE(...)
 #define PROFILE_SCOPE_COPY(...)
 #define PROFILE_SCOPE_FORMAT(...)
+#define PROFILE_SCOPE_PRINTF(...)
 
 #define PROFILE_TAG_VALUE(...)
 #define PROFILE_TAG_VALUE_COPY(...)
+#define PROFILE_TAG_VALUE_FORMAT(...)
+#define PROFILE_TAG_VALUE_PRINTF(...)
 
 #endif // !TAREN_PROFILE_ENABLE
 
@@ -382,7 +391,7 @@ namespace taren_profiler
       {
         // Sort thread listing by the time that they appear in the profile (tool sorts by name)
         char indexSpaceString[64];
-        snprintf(indexSpaceString, sizeof(indexSpaceString), "%02d", t.second.m_index);
+        std::snprintf(indexSpaceString, sizeof(indexSpaceString), "%02d", t.second.m_index);
 
         // Ensure a clean json string
         std::stringstream ss;
@@ -425,7 +434,7 @@ namespace taren_profiler
 
       // Append date and file extension
       char newFilename[1024];
-      snprintf(newFilename, sizeof(newFilename), "%s_%s.json", i_fileName, timeStr);
+      std::snprintf(newFilename, sizeof(newFilename), "%s_%s.json", i_fileName, timeStr);
       file.open(newFilename);
     }
     else
