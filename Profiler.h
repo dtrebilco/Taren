@@ -43,7 +43,7 @@
 #define PROFILE_END(...) taren_profiler::End(__VA_ARGS__)
 #define PROFILE_ENDFILEJSON(...) taren_profiler::EndFileJson(__VA_ARGS__)
 
-#define PROFILE_TAG_BEGIN(str) static_assert(str[0] != 0, "Only literal strings - Use PROFILE_TAGCOPY_BEGIN"); taren_profiler::ProfileTagBegin(taren_profiler::TagType::Begin, str)
+#define PROFILE_TAG_BEGIN(str) static_assert(str[0] != 0, "Only literal strings - Use PROFILE_TAGCOPY_BEGIN"); taren_profiler::ProfileTag(taren_profiler::TagType::Begin, str)
 #define PROFILE_TAG_COPY_BEGIN(str) taren_profiler::ProfileTag(taren_profiler::TagType::Begin, str, true)
 #define PROFILE_TAG_FORMAT_BEGIN(...) if(taren_profiler::IsProfiling()) { PROFILE_FORMAT(__VA_ARGS__); taren_profiler::ProfileTag(taren_profiler::TagType::Begin, buf, true); }
 #define PROFILE_TAG_PRINTF_BEGIN(...) if(taren_profiler::IsProfiling()) { PROFILE_PRINTF(__VA_ARGS__); taren_profiler::ProfileTag(taren_profiler::TagType::Begin, buf, true); }
@@ -51,10 +51,10 @@
 
 #define PROFILE_SCOPE_INTERNAL2(X,Y) X ## Y
 #define PROFILE_SCOPE_INTERNAL(a,b) PROFILE_SCOPE_INTERNAL2(a,b)
-#define PROFILE_SCOPE(str) static_assert(str[0] != 0, "Only literal strings - Use PROFILE_SCOPECOPY"); taren_profiler::ProfileScope PROFILE_SCOPE_INTERNAL(taren_profile_scope,__LINE__) (str)
-#define PROFILE_SCOPE_COPY(str) taren_profiler::ProfileScope PROFILE_SCOPE_INTERNAL(taren_profile_scope,__LINE__) (str, true)
-#define PROFILE_SCOPE_FORMAT(...) if(taren_profiler::IsProfiling()) { PROFILE_FORMAT(__VA_ARGS__); taren_profiler::ProfileScope PROFILE_SCOPE_INTERNAL(taren_profile_scope,__LINE__) (buf, true); }
-#define PROFILE_SCOPE_PRINTF(...) if(taren_profiler::IsProfiling()) { PROFILE_PRINTF(__VA_ARGS__); taren_profiler::ProfileScope PROFILE_SCOPE_INTERNAL(taren_profile_scope,__LINE__) (buf, true); }
+#define PROFILE_SCOPE(str) PROFILE_TAG_BEGIN(str); taren_profiler::ProfileScope PROFILE_SCOPE_INTERNAL(taren_profile_scope,__LINE__)
+#define PROFILE_SCOPE_COPY(str) PROFILE_TAG_COPY_BEGIN(str); taren_profiler::ProfileScope PROFILE_SCOPE_INTERNAL(taren_profile_scope,__LINE__)
+#define PROFILE_SCOPE_FORMAT(...) PROFILE_TAG_FORMAT_BEGIN(__VA_ARGS__); taren_profiler::ProfileScope PROFILE_SCOPE_INTERNAL(taren_profile_scope,__LINE__)
+#define PROFILE_SCOPE_PRINTF(...) PROFILE_TAG_PRINTF_BEGIN(__VA_ARGS__); taren_profiler::ProfileScope PROFILE_SCOPE_INTERNAL(taren_profile_scope,__LINE__)
 
 #define PROFILE_TAG_VALUE(str, value) static_assert(str[0] != 0, "Only literal strings - Use PROFILE_TAG_VALUE_COPY"); taren_profiler::ProfileTag(taren_profiler::TagType::Value, str, false, value)
 #define PROFILE_TAG_VALUE_COPY(str, value) taren_profiler::ProfileTag(taren_profiler::TagType::Value, str, true, value)
@@ -133,7 +133,6 @@ namespace taren_profiler
 
   struct ProfileScope
   {
-    ProfileScope(const char* i_str, bool i_copyStr = false) { ProfileTag(TagType::Begin, i_str, i_copyStr); }
     ~ProfileScope() { ProfileTag(TagType::End, nullptr); }
   };
 
