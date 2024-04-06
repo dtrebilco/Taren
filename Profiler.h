@@ -161,7 +161,7 @@ namespace taren_profiler
 #include <sstream>
 #include <fstream>
 
-namespace taren_profiler
+namespace
 {
   using clock = std::chrono::high_resolution_clock;
 
@@ -171,8 +171,8 @@ namespace taren_profiler
     const char* m_tag = nullptr; // The tag used in profiling - if empty is an end event
     std::thread::id m_threadID;  // The id of the thread
 
-    TagType m_type;              // The tag type
-    int32_t m_value;             // Misc value used with the tag
+    taren_profiler::TagType m_type; // The tag type
+    int32_t m_value;                // Misc value used with the tag
   };
 
   struct Tags
@@ -181,19 +181,15 @@ namespace taren_profiler
     std::vector<const char*> m_tags; // The tag stack
   };
 
-  struct ProfileData
-  {
-    clock::time_point m_startTime;        // The start time of the profile
+  clock::time_point g_startTime;        // The start time of the profile
 
-    std::atomic_bool m_enabled = false;                // If profiling is enabled
-    std::atomic_uint32_t m_slotCount = 0;              // The current slot counter
-    std::atomic_uint32_t m_recordCount = 0;            // The current record count
-    ProfileRecord m_records[TAREN_PROFILER_TAG_MAX_COUNT]; // The profiling records
+  std::atomic_bool g_enabled = false;                // If profiling is enabled
+  std::atomic_uint32_t g_slotCount = 0;              // The current slot counter
+  std::atomic_uint32_t g_recordCount = 0;            // The current record count
+  ProfileRecord g_records[TAREN_PROFILER_TAG_MAX_COUNT]; // The profiling records
 
-    std::atomic_uint32_t m_copyBufferSize = 0;              // The current copy buffer usage count
-    char m_copyBuffer[TAREN_PROFILER_TAG_NAME_BUFFER_SIZE]; // The buffer to store copied tag names
-  };
-  static ProfileData g_data; // The global profile data
+  std::atomic_uint32_t g_copyBufferSize = 0;              // The current copy buffer usage count
+  char g_copyBuffer[TAREN_PROFILER_TAG_NAME_BUFFER_SIZE]; // The buffer to store copied tag names
 
   const char* CopyStr(const char* i_str)
   {
@@ -204,65 +200,68 @@ namespace taren_profiler
 
     // Allocate space to copy into
     uint32_t len = (uint32_t)strlen(i_str) + 1;
-    uint32_t startOffset = g_data.m_copyBufferSize.fetch_add(len);
+    uint32_t startOffset = g_copyBufferSize.fetch_add(len);
     if ((startOffset + len) <= TAREN_PROFILER_TAG_NAME_BUFFER_SIZE)
     {
-      char* outBuffer = &g_data.m_copyBuffer[startOffset];
+      char* outBuffer = &g_copyBuffer[startOffset];
       memcpy(outBuffer, i_str, len);
       return outBuffer;
     }
     else
     {
-      g_data.m_copyBufferSize -= len; // Undo the add to make room for a smaller tag
+      g_copyBufferSize -= len; // Undo the add to make room for a smaller tag
     }
 
     return "OutOfTagBufferSpace";
   }
+}
 
+namespace taren_profiler
+{
   void ProfileTag(TagType i_type, const char* i_str, bool i_copyStr, int32_t i_value)
   {
-    if (!g_data.m_enabled)
+    if (!g_enabled)
     {
       return;
     }
 
     // Get the slot to put the record
-    uint32_t recordIndex = g_data.m_slotCount.fetch_add(1);
+    uint32_t recordIndex = g_slotCount.fetch_add(1);
     if (recordIndex < TAREN_PROFILER_TAG_MAX_COUNT)
     {
-      ProfileRecord& newData = g_data.m_records[recordIndex];
+      ProfileRecord& newData = g_records[recordIndex];
       newData.m_type = i_type;
       newData.m_threadID = std::this_thread::get_id();
       newData.m_tag = i_copyStr ? CopyStr(i_str) : i_str;
       newData.m_value = i_value;
       newData.m_time = clock::now();  // Assign the time as the last possible thing
 
-      g_data.m_recordCount++; // Flag that the record is complete
+      g_recordCount++; // Flag that the record is complete
     }
     else
     {
-      g_data.m_slotCount--; // Only hit if exceeded the record count or end of profiling, reverse the add
+      g_slotCount--; // Only hit if exceeded the record count or end of profiling, reverse the add
     }
   }
 
   bool IsProfiling()
   {
-    return g_data.m_enabled;
+    return g_enabled;
   }
 
   bool Begin()
   {
-    if (g_data.m_enabled)
+    if (g_enabled)
     {
       return false;
     }
 
     // Clear all data (may have been some extra in buffers from previous enable)
-    g_data.m_recordCount = 0;
-    g_data.m_slotCount = 0;
-    g_data.m_copyBufferSize = 0;
-    g_data.m_startTime = clock::now();
-    g_data.m_enabled = true;
+    g_recordCount = 0;
+    g_slotCount = 0;
+    g_copyBufferSize = 0;
+    g_startTime = clock::now();
+    g_enabled = true;
     return true;
   }
 
@@ -278,11 +277,11 @@ namespace taren_profiler
 
   bool End(std::ostream& o_outStream)
   {
-    if (!g_data.m_enabled)
+    if (!g_enabled)
     {
       return false;
     }
-    g_data.m_enabled = false;
+    g_enabled = false;
 
     // Init this thread as the primary thread
     std::unordered_map<std::thread::id, Tags> threadStack;
@@ -294,7 +293,7 @@ namespace taren_profiler
     o_outStream << "{\"traceEvents\":[\n";
 
     // Flag that records should no longer be written by setting the slot count to TAREN_PROFILER_TAG_COUNT
-    uint32_t slotCount = g_data.m_slotCount;
+    uint32_t slotCount = g_slotCount;
     do
     {
       // Check if already at the limit (can exceed the limit for a short duration)
@@ -304,19 +303,19 @@ namespace taren_profiler
         break;
       }
 
-    } while (!g_data.m_slotCount.compare_exchange_weak(slotCount, (uint32_t)TAREN_PROFILER_TAG_MAX_COUNT));
+    } while (!g_slotCount.compare_exchange_weak(slotCount, (uint32_t)TAREN_PROFILER_TAG_MAX_COUNT));
 
     // Wait for all threads to finish writing tags
-    uint32_t recordCount = g_data.m_recordCount;
+    uint32_t recordCount = g_recordCount;
     while (recordCount != slotCount)
     {
       std::this_thread::yield();
-      recordCount = g_data.m_recordCount;
+      recordCount = g_recordCount;
     }
 
     for (size_t i = 0; i < recordCount; i++)
     {
-      const ProfileRecord& entry = g_data.m_records[i];
+      const ProfileRecord& entry = g_records[i];
 
       auto& stack = threadStack[entry.m_threadID];
 
@@ -362,7 +361,7 @@ namespace taren_profiler
       }
 
       // Get the microsecond count
-      long long msCount = std::chrono::duration_cast<std::chrono::microseconds>(entry.m_time - g_data.m_startTime).count();
+      long long msCount = std::chrono::duration_cast<std::chrono::microseconds>(entry.m_time - g_startTime).count();
 
       if (i != 0)
       {
