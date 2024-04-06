@@ -28,7 +28,7 @@
 ///    there is a limited scratch buffer that is used with the COPY / FORMAT / PRINTF variants of the tag types.
 ///    eg. PROFILE_TAG_PRINTF_BEGIN("Value %d", 1234);
 ///        PROFILE_TAG_FORMAT_BEGIN("Value {}", 1234);
-///        PROFILE_TAG_COPY_BEGIN(synamicString.c_str());
+///        PROFILE_TAG_COPY_BEGIN(dynamicString.c_str());
 /// 
 ///  Thread safety: 
 ///    The tag calls are thread safe, but the PROFILE_BEGIN() / PROFILE_END() are not. If you need to call these concurrently, protect with a mutex.
@@ -132,7 +132,7 @@ namespace taren_profiler
 
   /// \brief Ends the profiling and writes the json results to a file
   /// \param i_fileName The file name to write to.
-  /// \param i_appendDateExtension If true, the current date/time and the extension .json is appened to the filename before opening.
+  /// \param i_appendDateExtension If true, the current date/time and the extension .json is appended to the filename before opening.
   /// \return Returns true on success
   bool EndFileJson(const char* i_fileName, bool i_appendDateExtension = true);
 
