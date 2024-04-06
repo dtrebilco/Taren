@@ -2,3 +2,6 @@ Tests/x64/Debug/
 Tests/x64/
 Tests/.vs/
 Tests/iter_profile.csv
+Tests/CppTemplates2022/
+*.json
+*.user
