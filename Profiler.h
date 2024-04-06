@@ -1,8 +1,6 @@
 /// \brief A simple profiler that generates json that can be loaded into chrome://tracing
-///       It is implemented with no platform specific code. 
-///       Limitations compared to the real trace generator:
-///        * No correct thread id's or thread names logged
-///        * Only simple meta data recorded
+///       It is implemented lock free and allocation free (during profiling) with no platform specific code. 
+/// 
 /// See:  http://www.gamasutra.com/view/news/176420/Indepth_Using_Chrometracing_to_view_your_inline_profiling_data.php
 ///       https://aras-p.info/blog/2017/01/23/Chrome-Tracing-as-Profiler-Frontend/
 ///       https://github.com/mainroach/sandbox/tree/master/chrome-event-trace
@@ -16,12 +14,33 @@
 ///    #define TAREN_PROFILER_IMPLEMENTATION
 ///    #include "Profiler.h"
 /// 
+///  Usage:
+///    PROFILE_BEGIN(); // Enables profiling
+///      PROFILE_TAG_BEGIN("TagName");  // Starts a tag
+///      PROFILE_TAG_END();             // Ends a tag
+///      
+///      PROFILE_SCOPE("TagName);       // Begin / End tag scope
+/// 
+///      PROFILE_TAG_VALUE("TagName", 123); // Add an instant tag with a value
+///    PROFILE_END(string) or PROFILE_ENDFILEJSON("filename") // Writes tags to a string or a file
+/// 
+///    Default tags must be a string literal or it will fail to compile. If you need a dynamic string, 
+///    there is a limited scratch buffer that is used with the COPY / FORMAT / PRINTF variants of the tag types.
+///    eg. PROFILE_TAG_PRINTF_BEGIN("Value %d", 1234);
+///        PROFILE_TAG_FORMAT_BEGIN("Value {}", 1234);
+///        PROFILE_TAG_COPY_BEGIN(synamicString.c_str());
+/// 
+///  Thread safety: 
+///    The tag calls are thread safe, but the PROFILE_BEGIN() / PROFILE_END() are not. If you need to call these concurrently, protect with a mutex.
+/// 
+///  Resource limits:
+///    The profiler has some hard coded limits that can be overridden by specifying some project #defines:
+///    TAREN_PROFILER_TAG_MAX_COUNT        - How many tags to support in a capture
+///    TAREN_PROFILER_TAG_NAME_BUFFER_SIZE - Size of the buffer that caches dynamic tag names
+///    TAREN_PROFILER_FORMAT_COUNT         - Max size of a dynamic tag
 #pragma once
 
-// TODO:
-//  - Note on no allocations and limits TAREN_PROFILER_FORMAT_COUNT TAREN_PROFILER_TAG_MAX_COUNT TAREN_PROFILER_TAG_NAME_BUFFER_SIZE
-//  - Note on thread safety - only during profiling is thread safe, Begin/End are not thread safe - use a wrapper mutex if this is neeed
-//  - Test thread safety in End() code
+// TODO: Test thread safety in End() code
 
 #ifdef TAREN_PROFILE_ENABLE
 
