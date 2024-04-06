@@ -1,9 +1,8 @@
 /// \brief A simple profiler that generates json that can be loaded into chrome://tracing
 ///       It is implemented with no platform specific code. 
 ///       Limitations compared to the real trace generator:
-///        * No string copying
 ///        * No correct thread id's or thread names logged
-///        * No meta data or log arguments recorded
+///        * Only simple meta data recorded
 /// See:  http://www.gamasutra.com/view/news/176420/Indepth_Using_Chrometracing_to_view_your_inline_profiling_data.php
 ///       https://aras-p.info/blog/2017/01/23/Chrome-Tracing-as-Profiler-Frontend/
 ///       https://github.com/mainroach/sandbox/tree/master/chrome-event-trace
@@ -11,24 +10,18 @@
 ///       https://src.chromium.org/viewvc/chrome/trunk/src/base/debug/trace_event.h?view=markup
 ///       https://docs.google.com/document/d/1CvAClvFfyA5R-PhYUmn5OOQtYMH4h6I0nSsKchNAySU/edit
 ///
-///  To enable, define TAREN_PROFILE_ENABLE in the project in the builds that need profiling, then in one C++ file
+///  To enable, define TAREN_PROFILE_ENABLE in the project builds that need profiling, then in one .cpp file
 ///  define TAREN_PROFILER_IMPLEMENTATION before including this file. 
 ///    // i.e. it should look like this:
-///    #include ...
-///    #include ...
 ///    #define TAREN_PROFILER_IMPLEMENTATION
 ///    #include "Profiler.h"
 /// 
 #pragma once
 
 // TODO:
-//  - Add defines to start and end profiling?
-//  - Allow tags to exceed limit? 
-//  - Have a buffer of chars to allow custom formatting - falls back to "CustomTag"
-//  - Have single memory alloc tag
+//  - Note on no allocations and limits TAREN_PROFILER_FORMAT_COUNT TAREN_PROFILER_TAG_MAX_COUNT TAREN_PROFILER_TAG_NAME_BUFFER_SIZE
 //  - Note on thread safety - only during profiling is thread safe, Begin/End are not thread safe - use a wrapper mutex if this is neeed
 //  - Test thread safety in End() code
-// https://en.cppreference.com/w/cpp/utility/format/format_to_n
 
 #ifdef TAREN_PROFILE_ENABLE
 
@@ -135,7 +128,6 @@ namespace taren_profiler
   {
     ~ProfileScope() { ProfileTag(TagType::End, nullptr); }
   };
-
 }
 
 #ifdef TAREN_PROFILER_IMPLEMENTATION
@@ -148,16 +140,13 @@ namespace taren_profiler
 #define TAREN_PROFILER_TAG_NAME_BUFFER_SIZE 1000000
 #endif //!TAREN_PROFILER_TAG_NAME_BUFFER_SIZE
 
-#include <memory>
 #include <chrono>
-#include <ctime>
-
 #include <thread>
 #include <atomic>
 
+#include <ctime>
 #include <vector>
 #include <unordered_map>
-
 #include <sstream>
 #include <fstream>
 
@@ -172,20 +161,14 @@ namespace
     std::thread::id m_threadID;  // The id of the thread
 
     taren_profiler::TagType m_type; // The tag type
-    int32_t m_value;                // Misc value used with the tag
+    int32_t m_value = 0;            // Misc value used with the tag
   };
 
-  struct Tags
-  {
-    int32_t m_index = -1;            // The index of the thread
-    std::vector<const char*> m_tags; // The tag stack
-  };
+  std::atomic_bool g_enabled = false; // If profiling is enabled
+  clock::time_point g_startTime;      // The start time of the profile
 
-  clock::time_point g_startTime;        // The start time of the profile
-
-  std::atomic_bool g_enabled = false;                // If profiling is enabled
-  std::atomic_uint32_t g_slotCount = 0;              // The current slot counter
-  std::atomic_uint32_t g_recordCount = 0;            // The current record count
+  std::atomic_uint32_t g_slotCount = 0;                  // The current slot counter
+  std::atomic_uint32_t g_recordCount = 0;                // The current record count
   ProfileRecord g_records[TAREN_PROFILER_TAG_MAX_COUNT]; // The profiling records
 
   std::atomic_uint32_t g_copyBufferSize = 0;              // The current copy buffer usage count
@@ -283,6 +266,12 @@ namespace taren_profiler
     }
     g_enabled = false;
 
+    struct Tags
+    {
+      int32_t m_index = -1;            // The index of the thread
+      std::vector<const char*> m_tags; // The tag stack
+    };
+
     // Init this thread as the primary thread
     std::unordered_map<std::thread::id, Tags> threadStack;
     threadStack[std::this_thread::get_id()].m_index = 0;
@@ -317,9 +306,8 @@ namespace taren_profiler
     {
       const ProfileRecord& entry = g_records[i];
 
-      auto& stack = threadStack[entry.m_threadID];
-
       // Assign a unique index to each thread
+      Tags& stack = threadStack[entry.m_threadID];
       if (stack.m_index < 0)
       {
         stack.m_index = threadCounter;
@@ -391,8 +379,8 @@ namespace taren_profiler
         char indexSpaceString[64];
         std::snprintf(indexSpaceString, sizeof(indexSpaceString), "%02d", t.second.m_index);
 
-        // Ensure a clean json string
-        std::stringstream ss;
+        // Ensure a clean json string (undefined what thread::id is)
+        std::ostringstream ss;
         ss << t.first;
         std::string threadName = ss.str();
         CleanJsonStr(threadName);
@@ -409,7 +397,7 @@ namespace taren_profiler
 
   bool End(std::string& o_outString)
   {
-    std::stringstream ss;
+    std::ostringstream ss;
     bool retval = End(ss);
     o_outString = ss.str();
     return retval;
@@ -420,7 +408,7 @@ namespace taren_profiler
     std::ofstream file;
     if (i_appendDateExtension)
     {
-      // Create a filename with the current date in it
+      // Create a filename with the current date in it with extension
       std::time_t t = std::time(nullptr);
       tm timeBuf;
       localtime_s(&timeBuf, &t);
@@ -430,10 +418,7 @@ namespace taren_profiler
         return false;
       }
 
-      // Append date and file extension
-      std::string newFilename = i_fileName;
-      newFilename += extStr;
-      file.open(newFilename);
+      file.open(std::string(i_fileName) + extStr);
     }
     else
     {
