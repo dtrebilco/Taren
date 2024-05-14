@@ -131,7 +131,7 @@ BitFlags bitOp4 = ~BitFlags::Flag1;
 
 This header generates profile json that can be loaded into: 
 
-<chrome://tracing>
+[chrome://tracing](chrome://tracing)
 
 [Blog on Chrome tracing](https://aras-p.info/blog/2017/01/23/Chrome-Tracing-as-Profiler-Frontend/)
 
