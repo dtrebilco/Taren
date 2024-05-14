@@ -127,3 +127,41 @@ BitFlags bitOp4 = ~BitFlags::Flag1;
 
 ```
 
+## Profiler
+
+This header generates profile json that can be loaded into: 
+
+<chrome://tracing>
+
+[Blog on Chrome tracing](https://aras-p.info/blog/2017/01/23/Chrome-Tracing-as-Profiler-Frontend/)
+
+It is implemented lock free and allocation free (during profiling) with no platform specific code. 
+
+To enable, define **TAREN_PROFILE_ENABLE** in the project builds that need profiling, then in one .cpp file define **TAREN_PROFILER_IMPLEMENTATION** before including this file. 
+i.e. it should look like this:
+```c++
+#define TAREN_PROFILER_IMPLEMENTATION
+#include "Profiler.h"
+```
+
+```c++
+PROFILE_BEGIN(); // Enables profiling
+
+PROFILE_TAG_BEGIN("TagName");  // Starts a tag
+PROFILE_TAG_END();             // Ends a tag
+
+PROFILE_SCOPE("TagName");      // Begin / End tag scope
+ 
+PROFILE_TAG_VALUE("TagName", 123); // Add an instant tag with a value
+
+PROFILE_END(string)  // Writes tags to a string
+PROFILE_ENDFILEJSON("filename") // Writes tags to a file
+```
+ 
+Default tags must be a string literal or it will fail to compile. If you need a dynamic string, there is a limited scratch buffer that is used with the COPY / FORMAT / PRINTF variants of the tag types.
+
+```c++
+PROFILE_TAG_PRINTF_BEGIN("Value %d", 1234);
+PROFILE_TAG_FORMAT_BEGIN("Value {}", 1234);
+PROFILE_TAG_COPY_BEGIN(dynamicString.c_str());
+```
