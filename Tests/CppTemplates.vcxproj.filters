@@ -45,6 +45,9 @@
     <ClInclude Include="EnumMacro_Base.h">
       <Filter>Tests</Filter>
     </ClInclude>
+    <ClInclude Include="..\Profiler.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\README.md">
